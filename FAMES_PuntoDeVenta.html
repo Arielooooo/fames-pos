@@ -199,156 +199,6 @@
   .btn-modal-ok{flex:1;padding:9px;border-radius:8px;border:none;background:var(--verde);color:white;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;cursor:pointer;}
   .btn-modal-cancel{flex:1;padding:9px;border-radius:8px;border:1px solid var(--gris-borde);background:transparent;color:var(--gris-texto);font-size:13px;cursor:pointer;}
 
-  .pago-btns{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-bottom:6px;}
-  .pago-btn{padding:7px 4px;border-radius:7px;border:1px solid var(--gris-borde);background:transparent;color:var(--gris-texto);font-size:11px;font-weight:500;cursor:pointer;text-align:center;transition:all .15s;}
-  .pago-btn:hover{border-color:var(--blanco);color:var(--blanco);}
-  .pago-btn.sel-efectivo{border-color:var(--verde);background:rgba(29,158,117,.12);color:var(--verde);font-weight:600;}
-  .pago-btn.sel-transferencia{border-color:var(--azul-light);background:rgba(24,95,165,.12);color:var(--azul-light);font-weight:600;}
-  .pago-btn.sel-tarjeta{border-color:var(--naranja);background:rgba(244,124,32,.12);color:var(--naranja);font-weight:600;}
-  .pago-label{font-size:10px;color:var(--gris-texto);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;}
-  .pass-overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;z-index:800;opacity:0;pointer-events:none;transition:opacity .2s;}
-  .pass-overlay.show{opacity:1;pointer-events:all;}
-  .pass-card{background:var(--gris-oscuro);border:1px solid var(--gris-borde);border-radius:14px;padding:28px;width:300px;display:flex;flex-direction:column;gap:14px;text-align:center;}
-  .pass-title{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:3px;color:var(--blanco);}
-  .pass-sub{font-size:12px;color:var(--gris-texto);}
-  .pass-input{background:var(--gris-panel);border:1px solid var(--gris-borde);border-radius:8px;color:var(--blanco);font-size:18px;padding:10px 14px;font-family:'DM Sans',sans-serif;width:100%;text-align:center;letter-spacing:4px;}
-  .pass-input:focus{outline:none;border-color:var(--naranja);}
-  .pass-error{font-size:12px;color:var(--rojo);min-height:16px;}
-  .btn-pass-ok{padding:10px;border-radius:8px;border:none;background:var(--naranja);color:white;font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:3px;cursor:pointer;}
-  .btn-pass-ok:hover{background:#c85f00;}
-  .btn-pass-cancel{padding:7px;border-radius:8px;border:1px solid var(--gris-borde);background:transparent;color:var(--gris-texto);font-size:12px;cursor:pointer;}
-
-  /* DOMICILIOS */
-  .btn-nuevo-dom{width:100%;padding:7px;border-radius:8px;border:1px solid var(--azul-light);background:transparent;color:var(--azul-light);font-size:12px;font-weight:500;cursor:pointer;margin-bottom:5px;}
-  .btn-nuevo-dom:hover{background:rgba(24,95,165,.15);}
-  .dom-overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;z-index:700;opacity:0;pointer-events:none;transition:opacity .2s;}
-  .dom-overlay.show{opacity:1;pointer-events:all;}
-  .dom-card{background:var(--gris-oscuro);border:1px solid var(--gris-borde);border-radius:14px;padding:24px;width:360px;display:flex;flex-direction:column;gap:12px;}
-  .dom-title{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:3px;color:var(--azul-light);}
-  .dom-field{display:flex;flex-direction:column;gap:5px;}
-  .dom-label{font-size:11px;color:var(--gris-texto);text-transform:uppercase;letter-spacing:.04em;}
-  .dom-input{background:var(--gris-panel);border:1px solid var(--gris-borde);border-radius:7px;color:var(--blanco);font-size:13px;padding:8px 12px;font-family:'DM Sans',sans-serif;width:100%;}
-  .dom-input:focus{outline:none;border-color:var(--azul-light);}
-  .dom-pago-btns{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;}
-  .dom-actions{display:flex;gap:8px;margin-top:4px;}
-  .btn-dom-ok{flex:1;padding:9px;border-radius:8px;border:none;background:var(--azul);color:white;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;cursor:pointer;}
-  .btn-dom-ok:hover{background:#0f3d6e;}
-  .btn-dom-cancel{flex:1;padding:9px;border-radius:8px;border:1px solid var(--gris-borde);background:transparent;color:var(--gris-texto);font-size:12px;cursor:pointer;}
-
-  /* VISTA REPARTIDOR */
-  .rep-card{background:var(--gris-panel);border:1px solid var(--azul);border-radius:12px;padding:16px;margin-bottom:12px;max-width:700px;}
-  .rep-card.entregado{border-color:var(--verde);opacity:.6;}
-  .rep-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
-  .rep-id{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;color:var(--azul-light);}
-  .rep-monto{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--naranja);}
-  .rep-info{font-size:13px;color:var(--blanco);margin-bottom:4px;}
-  .rep-info span{color:var(--gris-texto);margin-right:6px;}
-  .rep-items{font-size:12px;color:var(--gris-texto);margin-bottom:10px;}
-  .btn-entregado{padding:8px 18px;border-radius:8px;border:none;background:var(--verde);color:white;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:2px;cursor:pointer;}
-  .btn-entregado:hover{background:#0F6E56;}
-  .btn-entregado.done{background:var(--gris-borde);color:var(--gris-texto);cursor:default;}
-  .pagoIcon-dom{font-size:16px;margin-left:6px;}
-
-  /* CAJA CHICA */
-  .gasto-card{background:var(--gris-panel);border:1px solid var(--gris-borde);border-radius:10px;padding:14px;margin-bottom:10px;max-width:700px;display:flex;align-items:center;gap:12px;}
-  .gasto-icon{font-size:24px;flex-shrink:0;}
-  .gasto-info{flex:1;}
-  .gasto-desc{font-size:13px;color:var(--blanco);font-weight:500;}
-  .gasto-meta{font-size:11px;color:var(--gris-texto);margin-top:2px;}
-  .gasto-monto{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--rojo);letter-spacing:1px;}
-  .btn-gasto-del{width:26px;height:26px;border-radius:5px;border:1px solid var(--gris-borde);background:transparent;color:var(--gris-texto);cursor:pointer;font-size:13px;flex-shrink:0;}
-  .btn-gasto-del:hover{border-color:var(--rojo);color:var(--rojo);}
-  .caja-resumen{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;max-width:700px;}
-  .caja-stat{background:var(--gris-panel);border:1px solid var(--gris-borde);border-radius:10px;padding:12px;}
-  .caja-stat-label{font-size:11px;color:var(--gris-texto);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;}
-  .caja-stat-val{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;}
-  .cat-gasto-btns{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
-  .cat-gasto-btn{padding:5px 12px;border-radius:20px;border:1px solid var(--gris-borde);background:transparent;color:var(--gris-texto);font-size:12px;cursor:pointer;}
-  .cat-gasto-btn.active{border-color:var(--naranja);color:var(--naranja);background:rgba(244,124,32,.1);}
-  .nuevo-gasto-form{background:var(--gris-panel);border:1px solid var(--gris-borde);border-radius:10px;padding:14px;margin-bottom:16px;max-width:700px;}
-  .nuevo-gasto-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;}
-  .nuevo-gasto-input{background:var(--gris-oscuro);border:1px solid var(--gris-borde);border-radius:7px;color:var(--blanco);font-size:13px;padding:8px 11px;font-family:'DM Sans',sans-serif;width:100%;}
-  .nuevo-gasto-input:focus{outline:none;border-color:var(--naranja);}
-  .btn-agregar-gasto{width:100%;padding:9px;border-radius:8px;border:none;background:var(--rojo);color:white;font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:2px;cursor:pointer;margin-top:8px;}
-  .btn-agregar-gasto:hover{background:var(--rojo-dark);}
-
-  /* QR */
-  .qr-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;z-index:900;opacity:0;pointer-events:none;transition:opacity .2s;}
-  .qr-modal-overlay.show{opacity:1;pointer-events:all;}
-  .qr-card{background:var(--gris-oscuro);border:1px solid var(--gris-borde);border-radius:16px;padding:28px;width:320px;display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center;}
-  .qr-title{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:3px;color:var(--naranja);}
-  .qr-canvas{background:white;border-radius:10px;padding:12px;}
-  .qr-url{font-size:11px;color:var(--gris-texto);word-break:break-all;padding:6px 10px;background:var(--gris-panel);border-radius:6px;border:1px solid var(--gris-borde);}
-  .qr-sub{font-size:12px;color:var(--gris-texto);}
-  .btn-qr-close{padding:9px 24px;border-radius:8px;border:1px solid var(--gris-borde);background:transparent;color:var(--gris-texto);font-size:13px;cursor:pointer;}
-  .btn-qr-close:hover{color:var(--blanco);}
-  .btn-qr{padding:5px 12px;border-radius:6px;border:1px solid var(--naranja);background:transparent;color:var(--naranja);font-size:12px;cursor:pointer;font-weight:500;}
-  .btn-qr:hover{background:rgba(244,124,32,.1);}
-
-  /* PROPINAS */
-  .propina-row{display:flex;gap:6px;margin-bottom:8px;}
-  .propina-btn{flex:1;padding:7px 4px;border-radius:7px;border:1px solid var(--gris-borde);background:transparent;color:var(--gris-texto);font-size:11px;font-weight:500;cursor:pointer;text-align:center;transition:all .15s;font-family:'DM Sans',sans-serif;}
-  .propina-btn:hover{border-color:var(--verde);color:var(--verde);}
-  .propina-btn.active{border-color:var(--verde);background:rgba(29,158,117,.12);color:var(--verde);font-weight:600;}
-  .propina-custom{display:flex;gap:6px;margin-bottom:8px;}
-  .propina-input{flex:1;background:var(--gris-panel);border:1px solid var(--gris-borde);border-radius:7px;color:var(--blanco);font-size:13px;padding:7px 10px;font-family:'DM Sans',sans-serif;}
-  .propina-input:focus{outline:none;border-color:var(--verde);}
-  .propina-label{font-size:10px;color:var(--gris-texto);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;}
-  .propina-total{display:flex;justify-content:space-between;font-size:12px;color:var(--gris-texto);margin-bottom:3px;}
-  .propina-monto{color:var(--verde);font-weight:600;}
-
-  /* TICKET */
-  .ticket-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;z-index:900;opacity:0;pointer-events:none;transition:opacity .2s;}
-  .ticket-overlay.show{opacity:1;pointer-events:all;}
-  .ticket-wrapper{background:white;border-radius:8px;padding:0;width:300px;max-height:90vh;overflow-y:auto;}
-  .ticket-body{font-family:'Courier New',monospace;font-size:12px;color:#111;padding:20px 16px;line-height:1.6;}
-  .ticket-logo{font-size:22px;font-weight:900;letter-spacing:4px;text-align:center;margin-bottom:2px;}
-  .ticket-sub{font-size:10px;text-align:center;color:#555;margin-bottom:12px;}
-  .ticket-divider{border:none;border-top:1px dashed #999;margin:8px 0;}
-  .ticket-row{display:flex;justify-content:space-between;font-size:12px;}
-  .ticket-row-item{display:flex;gap:4px;margin-bottom:3px;}
-  .ticket-qty{min-width:20px;}
-  .ticket-nombre{flex:1;}
-  .ticket-precio{min-width:55px;text-align:right;}
-  .ticket-spec{font-size:10px;color:#666;padding-left:24px;margin-bottom:2px;}
-  .ticket-total-row{display:flex;justify-content:space-between;font-weight:700;font-size:14px;margin-top:4px;}
-  .ticket-propina-row{display:flex;justify-content:space-between;font-size:11px;color:#555;}
-  .ticket-footer{text-align:center;font-size:10px;color:#777;margin-top:10px;line-height:1.8;}
-  .ticket-actions{display:flex;gap:8px;padding:12px 16px;border-top:1px solid #eee;background:white;border-radius:0 0 8px 8px;}
-  .btn-imprimir{flex:1;padding:10px;border-radius:7px;border:none;background:#111;color:white;font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:2px;cursor:pointer;}
-  .btn-ticket-close{padding:10px 16px;border-radius:7px;border:1px solid #ddd;background:transparent;color:#555;font-size:13px;cursor:pointer;}
-
-  /* ESTADÍSTICAS */
-  .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;max-width:900px;}
-  .stats-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;max-width:900px;}
-  .stat-big{background:var(--gris-panel);border:1px solid var(--gris-borde);border-radius:10px;padding:14px;}
-  .stat-big-label{font-size:11px;color:var(--gris-texto);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;}
-  .stat-big-val{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px;color:var(--blanco);}
-  .stat-big-sub{font-size:11px;color:var(--gris-texto);margin-top:2px;}
-  .chart-card{background:var(--gris-panel);border:1px solid var(--gris-borde);border-radius:10px;padding:16px;max-width:900px;margin-bottom:16px;}
-  .chart-title{font-size:12px;font-weight:600;color:var(--gris-texto);text-transform:uppercase;letter-spacing:.04em;margin-bottom:14px;}
-  .bar-chart{display:flex;align-items:flex-end;gap:6px;height:120px;}
-  .bar-col{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;}
-  .bar-fill{width:100%;border-radius:4px 4px 0 0;background:var(--naranja);min-height:2px;transition:height .3s;}
-  .bar-fill.verde{background:var(--verde);}
-  .bar-fill.azul{background:#185FA5;}
-  .bar-label{font-size:9px;color:var(--gris-texto);text-align:center;white-space:nowrap;}
-  .bar-val{font-size:10px;color:var(--blanco);font-weight:500;}
-  .top-list{max-width:900px;}
-  .top-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--gris-borde);}
-  .top-pos{font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--naranja);min-width:24px;}
-  .top-name{flex:1;font-size:13px;color:var(--blanco);}
-  .top-bar-wrap{flex:2;height:6px;background:var(--gris-borde);border-radius:3px;overflow:hidden;}
-  .top-bar{height:100%;background:var(--naranja);border-radius:3px;}
-  .top-val{font-size:12px;color:var(--gris-texto);min-width:60px;text-align:right;}
-  .stats-period-btns{display:flex;gap:8px;margin-bottom:16px;}
-  .period-btn{padding:6px 16px;border-radius:20px;border:1px solid var(--gris-borde);background:transparent;color:var(--gris-texto);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;}
-  .period-btn.active{border-color:var(--naranja);color:var(--naranja);background:rgba(244,124,32,.1);}
-  .metodo-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--gris-borde);}
-  .metodo-name{font-size:13px;color:var(--blanco);}
-  .metodo-val{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1px;}
-  .dia-mejor{color:var(--verde);}
-  .dia-peor{color:var(--rojo);}
   .toast{position:fixed;bottom:24px;right:24px;background:var(--verde);color:white;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:500;opacity:0;transform:translateY(10px);transition:opacity .3s,transform .3s;pointer-events:none;z-index:600;}
   .toast.show{opacity:1;transform:translateY(0);}
   .toast.warn{background:#856404;}
@@ -391,7 +241,6 @@
   <div class="header-info">
     <span class="turno-info" id="turno-info">Turno</span>
     <span class="hora-display" id="hora-display">00:00</span>
-    <button class="btn-qr" onclick="mostrarQR()">📱 QR Pedidos</button>
     <button class="btn-cierre" onclick="showTab('cierre')">Cierre de turno</button>
   </div>
 </header>
@@ -401,13 +250,9 @@
   <div class="tab" onclick="showTab('cocina')">🍳 Cocina <span class="tab-badge" id="cocina-badge" style="display:none">0</span></div>
   <div class="tab" onclick="showTab('mesas')">🪑 Mesas</div>
   <div class="tab" onclick="showTab('inventario')">📦 Inventario</div>
-  <div class="tab" onclick="showTab('domicilios')">🛵 Domicilios</div>
-  <div class="tab" onclick="showTab('repartidor')">📍 Repartidor</div>
-  <div class="tab" onclick="showTab('caja')">💰 Caja chica</div>
   <div class="tab" onclick="showTab('cierre')">🔒 Cierre</div>
   <div class="tab" onclick="showTab('historial')">📋 Historial</div>
   <div class="tab" onclick="showTab('reporte')">📊 Reporte</div>
-  <div class="tab" onclick="showTab('stats')">📈 Estadísticas</div>
 </div>
 
 <!-- PEDIDO -->
@@ -426,14 +271,7 @@
     <div class="order-items" id="order-items"><div class="empty-msg">Toca un producto<br>para agregarlo</div></div>
     <div class="total-box">
       <div class="tfinal"><span class="tfinal-label">Total</span><span class="tfinal-amount" id="total">$0.00</span></div>
-      <button class="btn-nuevo-dom" id="btn-nuevo-dom">🛵 Nuevo domicilio</button>
       <button class="btn-enviar" id="btn-enviar">📋 Enviar a cocina</button>
-      <div class="pago-label">Método de pago</div>
-      <div class="pago-btns">
-        <button class="pago-btn" id="pago-efectivo" onclick="selPago('efectivo')">💵 Efectivo</button>
-        <button class="pago-btn" id="pago-transferencia" onclick="selPago('transferencia')">📲 Transferencia</button>
-        <button class="pago-btn" id="pago-tarjeta" onclick="selPago('tarjeta')">💳 Tarjeta</button>
-      </div>
       <button class="btn-pay" id="btn-cobrar">COBRAR</button>
       <button class="btn-clear" id="btn-cancelar">Cancelar pedido</button>
     </div>
@@ -447,21 +285,6 @@
     <button onclick="renderCocina()" style="background:transparent;border:1px solid var(--gris-borde);color:var(--gris-texto);padding:5px 12px;border-radius:6px;cursor:pointer;font-size:12px;">↻ Actualizar</button>
   </div>
   <div class="cocina-grid" id="cocina-grid"></div>
-</div>
-
-<!-- DOMICILIOS -->
-<div class="full-tab" id="tab-domicilios">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-    <div class="sec-title" style="margin:0;">🛵 Pedidos a domicilio</div>
-    <button onclick="showTab('repartidor')" style="background:transparent;border:1px solid var(--azul-light);color:var(--azul-light);padding:5px 12px;border-radius:6px;cursor:pointer;font-size:12px;">📍 Ver vista repartidor</button>
-  </div>
-  <div id="dom-lista"></div>
-</div>
-
-<!-- REPARTIDOR -->
-<div class="full-tab" id="tab-repartidor">
-  <div class="sec-title" style="margin-bottom:14px;">📍 Vista del repartidor</div>
-  <div id="rep-lista"></div>
 </div>
 
 <!-- MESAS -->
@@ -497,99 +320,6 @@
       <tbody id="inv-body"></tbody>
     </table>
   </div>
-</div>
-
-<!-- ESTADÍSTICAS -->
-<div class="full-tab" id="tab-stats">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;max-width:900px;">
-    <div class="sec-title" style="margin:0;">📈 Estadísticas históricas</div>
-  </div>
-
-  <div class="stats-period-btns">
-    <button class="period-btn active" onclick="selPeriodo('semana')">📅 Esta semana</button>
-    <button class="period-btn" onclick="selPeriodo('mes')">🗓 Este mes</button>
-    <button class="period-btn" onclick="selPeriodo('todo')">📊 Todo el tiempo</button>
-  </div>
-
-  <!-- KPIs -->
-  <div class="stats-grid" id="stats-kpis"></div>
-
-  <!-- Gráfica de ventas por día -->
-  <div class="chart-card">
-    <div class="chart-title">💰 Ventas por turno</div>
-    <div class="bar-chart" id="chart-ventas"></div>
-  </div>
-
-  <!-- Gráfica métodos de pago -->
-  <div class="stats-grid-2">
-    <div class="chart-card" style="margin-bottom:0;">
-      <div class="chart-title">💳 Métodos de pago</div>
-      <div id="chart-pagos"></div>
-    </div>
-    <div class="chart-card" style="margin-bottom:0;">
-      <div class="chart-title">🤝 Propinas por turno</div>
-      <div class="bar-chart" id="chart-propinas"></div>
-    </div>
-  </div>
-  <div style="margin-bottom:16px;"></div>
-
-  <!-- Top productos -->
-  <div class="chart-card">
-    <div class="chart-title">🏆 Top 10 productos más vendidos</div>
-    <div class="top-list" id="stats-top-productos"></div>
-  </div>
-
-  <!-- Mejor y peor día -->
-  <div class="stats-grid-2">
-    <div class="stat-big" style="max-width:none;">
-      <div class="stat-big-label">🌟 Mejor turno</div>
-      <div class="stat-big-val dia-mejor" id="stats-mejor-dia">—</div>
-      <div class="stat-big-sub" id="stats-mejor-val"></div>
-    </div>
-    <div class="stat-big" style="max-width:none;">
-      <div class="stat-big-label">📉 Turno más bajo</div>
-      <div class="stat-big-val dia-peor" id="stats-peor-dia">—</div>
-      <div class="stat-big-sub" id="stats-peor-val"></div>
-    </div>
-  </div>
-</div>
-
-<!-- CAJA CHICA -->
-<div class="full-tab" id="tab-caja">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;max-width:700px;">
-    <div class="sec-title" style="margin:0;">💰 Caja chica — Gastos del turno</div>
-  </div>
-
-  <!-- Resumen -->
-  <div class="caja-resumen">
-    <div class="caja-stat"><div class="caja-stat-label">Total gastos</div><div class="caja-stat-val" id="caja-total" style="color:var(--rojo);">$0</div></div>
-    <div class="caja-stat"><div class="caja-stat-label">Ventas netas</div><div class="caja-stat-val" id="caja-netas" style="color:var(--verde);">$0</div></div>
-    <div class="caja-stat"><div class="caja-stat-label">Núm. gastos</div><div class="caja-stat-val" id="caja-num">0</div></div>
-  </div>
-
-  <!-- Nuevo gasto -->
-  <div class="nuevo-gasto-form">
-    <div class="sec-title" style="margin:0 0 10px;border:none;">➕ Registrar gasto</div>
-    <div class="cat-gasto-btns" id="cat-gasto-btns">
-      <button class="cat-gasto-btn active" onclick="selCatGasto('Ingredientes','🥩')">🥩 Ingredientes</button>
-      <button class="cat-gasto-btn" onclick="selCatGasto('Bebidas','🥤')">🥤 Bebidas</button>
-      <button class="cat-gasto-btn" onclick="selCatGasto('Gas','🔥')">🔥 Gas</button>
-      <button class="cat-gasto-btn" onclick="selCatGasto('Limpieza','🧹')">🧹 Limpieza</button>
-      <button class="cat-gasto-btn" onclick="selCatGasto('Empaque','📦')">📦 Empaque</button>
-      <button class="cat-gasto-btn" onclick="selCatGasto('Transporte','🚗')">🚗 Transporte</button>
-      <button class="cat-gasto-btn" onclick="selCatGasto('Otro','💸')">💸 Otro</button>
-    </div>
-    <div class="nuevo-gasto-grid">
-      <input class="nuevo-gasto-input" id="gasto-desc" placeholder="Descripción (ej: aceite, bolsas...)"/>
-      <input class="nuevo-gasto-input" id="gasto-monto" type="number" min="0" step="0.5" placeholder="Monto $"/>
-    </div>
-    <input class="nuevo-gasto-input" id="gasto-notas" placeholder="Notas adicionales (opcional)" style="margin-top:8px;"/>
-    <button class="btn-agregar-gasto" onclick="agregarGasto()">REGISTRAR GASTO</button>
-  </div>
-
-  <!-- Lista de gastos -->
-  <div class="sec-title" style="margin-bottom:10px;max-width:700px;">Gastos registrados</div>
-  <div id="gastos-lista"><p style="font-size:13px;color:var(--gris-texto);">Sin gastos registrados aún.</p></div>
 </div>
 
 <!-- CIERRE -->
@@ -631,10 +361,7 @@
     <div class="sc"><div class="sl">Pedidos cobrados</div><div class="sv" id="rep-pedidos">0</div></div>
     <div class="sc"><div class="sl">Ticket promedio</div><div class="sv" id="rep-ticket">$0</div></div>
     <div class="sc"><div class="sl">Producto estrella</div><div class="sv small" id="rep-estrella">—</div></div>
-    <div class="sc"><div class="sl">🤝 Propinas del turno</div><div class="sv" id="rep-propinas" style="color:var(--verde);">$0</div></div>
   </div>
-  <div class="sec-title" style="margin-bottom:8px;">Cobros por método de pago</div>
-  <div id="rep-pagos"></div>
   <div class="sec-title" style="margin-bottom:8px;">Ventas por producto</div>
   <div id="rep-productos" style="max-width:700px;"></div>
   <div class="sec-title" style="margin-top:20px;margin-bottom:8px;">Historial de cobros</div>
@@ -642,67 +369,6 @@
 </div>
 
 </div><!-- /app -->
-
-<!-- MODAL CONTRASEÑA INVENTARIO -->
-<div class="pass-overlay" id="pass-overlay">
-  <div class="pass-card">
-    <div style="font-size:36px;">🔒</div>
-    <div class="pass-title">Inventario</div>
-    <div class="pass-sub">Esta sección está protegida.<br>Ingresa la contraseña para continuar.</div>
-    <input class="pass-input" id="pass-input" type="password" placeholder="••••••••" maxlength="20"/>
-    <div class="pass-error" id="pass-error"></div>
-    <button class="btn-pass-ok" id="btn-pass-ok">ENTRAR</button>
-    <button class="btn-pass-cancel" id="btn-pass-cancel">Cancelar</button>
-  </div>
-</div>
-
-<!-- MODAL QR -->
-<div class="qr-modal-overlay" id="qr-overlay">
-  <div class="qr-card">
-    <div class="qr-title">📱 QR para clientes</div>
-    <div class="qr-sub">Muestra este código para que tus clientes hagan su pedido en línea</div>
-    <div class="qr-canvas">
-      <canvas id="qr-canvas" width="200" height="200"></canvas>
-    </div>
-    <div class="qr-url" id="qr-url"></div>
-    <div class="qr-sub">Escanear con la cámara del celular</div>
-    <button class="btn-qr-close" onclick="cerrarQR()">Cerrar</button>
-  </div>
-</div>
-
-<!-- MODAL TICKET -->
-<div class="ticket-overlay" id="ticket-overlay">
-  <div class="ticket-wrapper">
-    <div class="ticket-body" id="ticket-body"></div>
-    <div class="ticket-actions">
-      <button class="btn-ticket-close" onclick="cerrarTicket()">Cerrar</button>
-      <button class="btn-imprimir" onclick="imprimirTicket()">🖨 IMPRIMIR</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL DOMICILIO -->
-<div class="dom-overlay" id="dom-overlay">
-  <div class="dom-card">
-    <div class="dom-title">🛵 Nuevo domicilio</div>
-    <div class="dom-field"><label class="dom-label">Nombre del cliente</label><input class="dom-input" id="dom-nombre" placeholder="Ej: Juan García"/></div>
-    <div class="dom-field"><label class="dom-label">Teléfono</label><input class="dom-input" id="dom-telefono" type="tel" placeholder="55 1234 5678"/></div>
-    <div class="dom-field"><label class="dom-label">Dirección</label><textarea class="dom-input" id="dom-direccion" rows="2" placeholder="Calle, número, colonia, referencias..."></textarea></div>
-    <div class="dom-field"><label class="dom-label">Notas</label><input class="dom-input" id="dom-notas" placeholder="Ej: sin picante, tocar timbre..."/></div>
-    <div class="dom-field">
-      <label class="dom-label">Método de pago</label>
-      <div class="dom-pago-btns">
-        <button class="pago-btn sel-efectivo" id="dom-pago-efectivo" onclick="selDomPago('efectivo')">💵 Efectivo</button>
-        <button class="pago-btn" id="dom-pago-transferencia" onclick="selDomPago('transferencia')">📲 Transferencia</button>
-        <button class="pago-btn" id="dom-pago-tarjeta" onclick="selDomPago('tarjeta')">💳 Tarjeta</button>
-      </div>
-    </div>
-    <div class="dom-actions">
-      <button class="btn-dom-cancel" id="dom-cancel">Cancelar</button>
-      <button class="btn-dom-ok" id="dom-ok">CREAR PEDIDO</button>
-    </div>
-  </div>
-</div>
 
 <!-- MODAL INGREDIENTE -->
 <div class="modal-overlay" id="modal-overlay">
@@ -809,65 +475,7 @@ var INV=[
   {name:'Vaso 500ml',apertura:30,stock:30,unit:'pzas',min:5},
   {name:'Vaso cervecero',apertura:10,stock:10,unit:'pzas',min:3},
   {name:'Vaso largo',apertura:10,stock:10,unit:'pzas',min:3},
-  {name:'Jamón (reb)',apertura:20,stock:20,unit:'reb',min:5},
-  {name:'Carbón',apertura:10,stock:10,unit:'kg',min:2},
-  {name:'Contenedores',apertura:100,stock:100,unit:'pzas',min:20},
-  {name:'Bolsas',apertura:100,stock:100,unit:'pzas',min:20},
-  {name:'Vaso michelada',apertura:20,stock:20,unit:'pzas',min:5},
-  {name:'Vaso cerillito',apertura:20,stock:20,unit:'pzas',min:5},
-  {name:'Coca Zero',apertura:12,stock:12,unit:'pzas',min:4},
-  {name:'Boing guayaba',apertura:12,stock:12,unit:'pzas',min:4},
-  {name:'Refrescos (varios)',apertura:24,stock:24,unit:'pzas',min:6},
-  {name:'Tocineta',apertura:20,stock:20,unit:'pzas',min:5},
-  {name:'Salchicha de pollo',apertura:15,stock:15,unit:'pzas',min:5},
-  {name:'Servilletas',apertura:500,stock:500,unit:'pzas',min:100},
-  {name:'Papel higiénico',apertura:12,stock:12,unit:'rollos',min:3},
-  {name:'Aceite (lt)',apertura:4,stock:4,unit:'lt',min:1},
-  {name:'Pan hotdog sencillo',apertura:20,stock:20,unit:'pzas',min:6},
-  {name:'Pan choripan',apertura:10,stock:10,unit:'pzas',min:3},
-  {name:'Aderezo Ranch',apertura:500,stock:500,unit:'ml',min:100},
-  {name:'Aderezo Red Hot',apertura:500,stock:500,unit:'ml',min:100},
-  {name:'Rajas',apertura:300,stock:300,unit:'g',min:50},
-  {name:'Chipotle',apertura:300,stock:300,unit:'g',min:50},
-  {name:'Aderezo Mango Habanero',apertura:500,stock:500,unit:'ml',min:100},
-  {name:'Sazonador papas',apertura:200,stock:200,unit:'g',min:50},
-  {name:'Sazonador carne',apertura:200,stock:200,unit:'g',min:50},
-  {name:'Mostaza',apertura:500,stock:500,unit:'g',min:100},
-  {name:'Gel antibacterial',apertura:500,stock:500,unit:'ml',min:100},
-  {name:'Queso derretido',apertura:500,stock:500,unit:'g',min:100},
-  {name:'Aderezo Tamarindo',apertura:300,stock:300,unit:'ml',min:50},
-  {name:'Aderezo Frambuesa',apertura:300,stock:300,unit:'ml',min:50},
-  {name:'Valentina',apertura:500,stock:500,unit:'ml',min:100},
-  {name:'Maggi',apertura:200,stock:200,unit:'ml',min:50},
-  {name:'Inglesa (salsa)',apertura:200,stock:200,unit:'ml',min:50},
-  {name:'Vinagre',apertura:500,stock:500,unit:'ml',min:100},
-  {name:'Aceite de oliva',apertura:500,stock:500,unit:'ml',min:100},
-  {name:'Botanera',apertura:200,stock:200,unit:'g',min:50},
-  {name:'Tajín',apertura:200,stock:200,unit:'g',min:50},
-  {name:'Preparado miches',apertura:300,stock:300,unit:'g',min:50},
-  {name:'Ajonjolí',apertura:100,stock:100,unit:'g',min:20},
-  {name:'Sal',apertura:1000,stock:1000,unit:'g',min:200},
-  {name:'Ajo',apertura:5,stock:5,unit:'pzas',min:2},
-  {name:'Habanero',apertura:10,stock:10,unit:'pzas',min:3},
-  {name:'Perejil',apertura:50,stock:50,unit:'g',min:10},
-  {name:'Jabón en polvo',apertura:500,stock:500,unit:'g',min:100},
-  {name:'Jabón trastes',apertura:500,stock:500,unit:'ml',min:100},
-  {name:'Pino (limpiador)',apertura:500,stock:500,unit:'ml',min:100},
-  {name:'Leche',apertura:2,stock:2,unit:'lt',min:1},
-  {name:'Vasos malt',apertura:30,stock:30,unit:'pzas',min:10},
-  {name:'Tapas malt',apertura:30,stock:30,unit:'pzas',min:10},
-  {name:'Saborizante fresa',apertura:500,stock:500,unit:'ml',min:100},
-  {name:'Saborizante chocolate',apertura:500,stock:500,unit:'ml',min:100},
-  {name:'Saborizante vainilla',apertura:500,stock:500,unit:'ml',min:100},
-  {name:'Crema batida',apertura:500,stock:500,unit:'ml',min:100},
-  {name:'Cerezas',apertura:30,stock:30,unit:'pzas',min:10},
-  {name:'Hersheys',apertura:200,stock:200,unit:'g',min:50},
-  {name:'Canela en polvo',apertura:100,stock:100,unit:'g',min:20},
-  {name:'Vainilla',apertura:100,stock:100,unit:'ml',min:20},
-  {name:'Popotes',apertura:100,stock:100,unit:'pzas',min:20},
-  {name:'Limón (pzas)',apertura:20,stock:20,unit:'pzas',min:5},
-  {name:'Cebolla (pzas)',apertura:5,stock:5,unit:'pzas',min:2},
-  {name:'Jitomate (pzas)',apertura:5,stock:5,unit:'pzas',min:2},
+  {name:'Jamón (reb)',apertura:20,stock:20,unit:'reb',min:5}
 ];
 
 // ===== ESTADO =====
@@ -1016,10 +624,7 @@ function renderOrder(){
   el.querySelectorAll('.qbtn').forEach(function(btn){
     btn.addEventListener('click',(function(bid,bd){return function(){changeQty(bid,bd);};})(btn.getAttribute('data-id'),parseInt(btn.getAttribute('data-d'))));
   });
-  var propina = calcPropina(total);
-  var totalConPropina = total + propina;
-  document.getElementById('propina-display').textContent = '$'+propina.toFixed(2);
-  document.getElementById('total').textContent = '$'+totalConPropina.toFixed(2);
+  document.getElementById('total').textContent='$'+total.toFixed(2);
 }
 
 // ===== ENVIAR COCINA =====
@@ -1033,7 +638,6 @@ function enviarCocina(){
   cocina.push({id:comNum,mesa:currentTable,hora:hora,timestamp:Date.now(),items:items,cobrado:false});
   updateCocinaBadge();
   showToast('📋 Comanda #'+comNum+' → cocina');
-  sonarCocina();
 }
 
 function updateCocinaBadge(){
@@ -1085,17 +689,14 @@ function cobrarComanda(cid){
     items.push(it.qty+'x '+it.item.name);
     var al=descontarInventario(it.id,it.qty);if(al.length)alertas=alertas.concat(al);
   }
-  var propina=calcPropina(total);
-  var totalConPropina=total+propina;
   cobroNum++;
   var now=new Date(),hora=now.getHours()+':'+(now.getMinutes()<10?'0':'')+now.getMinutes();
-  salesLog.push({num:cobroNum,table:com.mesa,total:totalConPropina,subtotal:total,propina:propina,hora:hora,items:items.join(', '),pago:metodoPago});
+  salesLog.push({num:cobroNum,table:com.mesa,total:total,hora:hora,items:items.join(', ')});
   com.cobrado=true;
   orders[com.mesa]={items:{},enCocina:false};
   updateCocinaBadge();renderCocina();renderMesaTabs();
   showToast('✓ Cobro #'+cobroNum+' '+com.mesa+' $'+total.toFixed(2));
-  sonarCobro();
-  if(alertas.length){setTimeout(function(){showToast('⚠ Stock bajo: '+alertas.slice(0,2).join(', '),true);},2800);sonarAlerta();}
+  if(alertas.length)setTimeout(function(){showToast('⚠ Stock bajo: '+alertas.slice(0,2).join(', '),true);},2800);
 }
 
 // ===== COBRAR DIRECTO =====
@@ -1109,15 +710,12 @@ function cobrar(){
     items.push(qty+'x '+item.name);
     var al=descontarInventario(id,qty);if(al.length)alertas=alertas.concat(al);
   }
-  var propina=calcPropina(total);
-  var totalConPropina=total+propina;
   cobroNum++;
   var now=new Date(),hora=now.getHours()+':'+(now.getMinutes()<10?'0':'')+now.getMinutes();
-  salesLog.push({num:cobroNum,table:currentTable,total:totalConPropina,subtotal:total,propina:propina,hora:hora,items:items.join(', '),pago:metodoPago});
+  salesLog.push({num:cobroNum,table:currentTable,total:total,hora:hora,items:items.join(', ')});
   orders[currentTable]={items:{},enCocina:false};
   renderOrder();renderMesaTabs();
   showToast('✓ Cobro #'+cobroNum+' $'+total.toFixed(2));
-  sonarCobro();
   if(alertas.length)setTimeout(function(){showToast('⚠ Stock bajo: '+alertas.slice(0,2).join(', '),true);},2800);
 }
 
@@ -1188,12 +786,7 @@ function renderCierre(){
   // Stats
   var total=salesLog.reduce(function(a,s){return a+s.total;},0);
   var pedidos=salesLog.length,ticket=pedidos?total/pedidos:0;
-  var totalGastos=gastos.reduce(function(a,g){return a+g.monto;},0);
-  var totalPropinas=salesLog.reduce(function(a,s){return a+(s.propina||0);},0);
   var statsHtml='<div class="cierre-card"><div class="cierre-label">Ventas del turno</div><div class="cierre-val">$'+Math.round(total)+'</div></div>';
-  statsHtml+='<div class="cierre-card"><div class="cierre-label">Gastos caja chica</div><div class="cierre-val" style="color:var(--rojo);">$'+Math.round(totalGastos)+'</div></div>';
-  statsHtml+='<div class="cierre-card"><div class="cierre-label">Utilidad neta</div><div class="cierre-val" style="color:var(--verde);">$'+Math.round(total-totalGastos)+'</div></div>';
-  statsHtml+='<div class="cierre-card"><div class="cierre-label">🤝 Propinas totales</div><div class="cierre-val" style="color:var(--verde);">$'+Math.round(totalPropinas)+'</div></div>';
   statsHtml+='<div class="cierre-card"><div class="cierre-label">Pedidos cobrados</div><div class="cierre-val">'+pedidos+'</div></div>';
   statsHtml+='<div class="cierre-card"><div class="cierre-label">Ticket promedio</div><div class="cierre-val">$'+Math.round(ticket)+'</div></div>';
   var emps=turnoActivo.empleados.map(function(e){return e.nombre;}).join(', ');
@@ -1224,10 +817,7 @@ function cerrarTurno(){
   if(!confirm('¿Cerrar el turno? Se guardará en el historial.'))return;
   var total=salesLog.reduce(function(a,s){return a+s.total;},0);
   var snapshot=INV.map(function(it){return{name:it.name,apertura:it.apertura,cierre:it.stock,vendido:Math.round((it.apertura-it.stock)*100)/100,unit:it.unit,min:it.min};});
-  var pagosCierre={efectivo:salesLog.filter(function(s){return s.pago==='efectivo';}).reduce(function(a,s){return a+s.total;},0),transferencia:salesLog.filter(function(s){return s.pago==='transferencia';}).reduce(function(a,s){return a+s.total;},0),tarjeta:salesLog.filter(function(s){return s.pago==='tarjeta';}).reduce(function(a,s){return a+s.total;},0)};
-  var propinasCierre=salesLog.reduce(function(a,s){return a+(s.propina||0);},0);
-  var sbpCierre=Object.assign({},salesByProduct);
-  historialTurnos.unshift({fecha:turnoActivo.fecha,horaApertura:turnoActivo.hora,empleados:turnoActivo.empleados,ventasTotal:total,pedidos:salesLog.length,inventario:snapshot,ventas:salesLog.slice(),pagos:pagosCierre,propinas:propinasCierre,salesByProduct:sbpCierre});
+  historialTurnos.unshift({fecha:turnoActivo.fecha,horaApertura:turnoActivo.hora,empleados:turnoActivo.empleados,ventasTotal:total,pedidos:salesLog.length,inventario:snapshot,ventas:salesLog.slice()});
   // Resetear turno
   salesLog=[];salesByProduct={};cobroNum=0;comNum=0;orders={};cocina=[];
   for(var i=0;i<INV.length;i++){INV[i].apertura=INV[i].stock;}
@@ -1274,27 +864,9 @@ function renderHistorial(){
 function renderReporte(){
   var total=salesLog.reduce(function(a,s){return a+s.total;},0);
   var pedidos=salesLog.length,ticket=pedidos?total/pedidos:0;
-  var totalPropinas=salesLog.reduce(function(a,s){return a+(s.propina||0);},0);
   document.getElementById('rep-ventas').textContent='$'+Math.round(total);
-  var repPropEl=document.getElementById('rep-propinas');
-  if(repPropEl) repPropEl.textContent='$'+Math.round(totalPropinas);
   document.getElementById('rep-pedidos').textContent=pedidos;
   document.getElementById('rep-ticket').textContent='$'+Math.round(ticket);
-  // Totales por método de pago
-  var totEfectivo=0,totTransferencia=0,totTarjeta=0;
-  for(var i=0;i<salesLog.length;i++){
-    var s=salesLog[i];
-    if(s.pago==='efectivo') totEfectivo+=s.total;
-    else if(s.pago==='transferencia') totTransferencia+=s.total;
-    else if(s.pago==='tarjeta') totTarjeta+=s.total;
-    else totEfectivo+=s.total;
-  }
-  var pagoHtml='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px;max-width:600px;">';
-  pagoHtml+='<div class="sc"><div class="sl">💵 Efectivo</div><div class="sv" style="font-size:20px;">$'+Math.round(totEfectivo)+'</div></div>';
-  pagoHtml+='<div class="sc"><div class="sl">📲 Transferencia</div><div class="sv" style="font-size:20px;">$'+Math.round(totTransferencia)+'</div></div>';
-  pagoHtml+='<div class="sc"><div class="sl">💳 Tarjeta</div><div class="sv" style="font-size:20px;">$'+Math.round(totTarjeta)+'</div></div>';
-  pagoHtml+='</div>';
-  document.getElementById('rep-pagos').innerHTML=pagoHtml;
   var sorted=[],spk=Object.keys(salesByProduct);
   for(var i=0;i<spk.length;i++)sorted.push([spk[i],salesByProduct[spk[i]]]);
   sorted.sort(function(a,b){return b[1]-a[1];});
@@ -1310,9 +882,7 @@ function renderReporte(){
   var hhtml='';
   for(var k=salesLog.length-1;k>=0;k--){
     var s=salesLog[k];
-    var pagoIcon={'efectivo':'💵','transferencia':'📲','tarjeta':'💳'};
-    var icon=pagoIcon[s.pago]||'💵';
-    var propStr=s.propina&&s.propina>0?' 🤝$'+s.propina.toFixed(2):'';hhtml+='<div class="venta-row"><b>#'+s.num+'</b> · '+s.table+' · '+s.hora+' · <b>$'+s.total.toFixed(2)+'</b>'+propStr+' '+icon+' — '+s.items+'</div>';
+    hhtml+='<div class="venta-row"><b>#'+s.num+'</b> · '+s.table+' · '+s.hora+' · <b>$'+s.total.toFixed(2)+'</b> — '+s.items+'</div>';
   }
   document.getElementById('ventas-list').innerHTML=hhtml||'<p style="font-size:13px;color:var(--gris-texto);">Sin cobros aún.</p>';
 }
@@ -1320,24 +890,12 @@ function renderReporte(){
 // ===== TABS =====
 function showTab(tab){
   document.getElementById('tab-pedido').style.display='none';
-  ['cocina','mesas','inventario','caja','cierre','historial','reporte','stats','domicilios','repartidor'].forEach(function(t){document.getElementById('tab-'+t).style.display='none';});
-  document.querySelectorAll('.tab').forEach(function(el,i){el.classList.toggle('active',['pedido','cocina','mesas','inventario','domicilios','repartidor','caja','cierre','historial','reporte','stats'][i]===tab);});
+  ['cocina','mesas','inventario','cierre','historial','reporte'].forEach(function(t){document.getElementById('tab-'+t).style.display='none';});
+  document.querySelectorAll('.tab').forEach(function(el,i){el.classList.toggle('active',['pedido','cocina','mesas','inventario','cierre','historial','reporte'][i]===tab);});
   if(tab==='pedido') document.getElementById('tab-pedido').style.display='flex';
   else document.getElementById('tab-'+tab).style.display='block';
   if(tab==='mesas') renderTables();
-  if(tab==='domicilios') renderDomicilios();
-  if(tab==='repartidor') renderRepartidor();
-  if(tab==='caja') renderCaja();
-  if(tab==='stats') renderStats();
-  if(tab==='inventario'){
-    // Mostrar la pestaña vacía y luego pedir contraseña
-    // Mostrar tab primero, luego pedir contraseña
-    document.getElementById('tab-inventario').style.display='block';
-    pedirPassword(function(){
-      renderInventario();
-    });
-    return;
-  }
+  if(tab==='inventario') renderInventario();
   if(tab==='cocina') renderCocina();
   if(tab==='cierre') renderCierre();
   if(tab==='historial') renderHistorial();
@@ -1377,6 +935,125 @@ function updateHora(){
 document.getElementById('btn-cobrar').addEventListener('click',cobrar);
 document.getElementById('btn-cancelar').addEventListener('click',limpiarPedido);
 document.getElementById('btn-enviar').addEventListener('click',enviarCocina);
+
+// ===== SINCRONIZACIÓN EN RED =====
+var ws = null;
+var modoRed = false;
+var sincronizando = false;
+
+function conectarServidor() {
+  var wsUrl = 'ws://' + window.location.host;
+  try {
+    ws = new WebSocket(wsUrl);
+
+    ws.onopen = function() {
+      modoRed = true;
+      console.log('[FAMES] Conectado al servidor');
+      mostrarIndicadorRed(true);
+    };
+
+    ws.onmessage = function(e) {
+      try {
+        var msg = JSON.parse(e.data);
+        if (msg.tipo === 'estado') {
+          sincronizando = true;
+          aplicarEstado(msg.data);
+          sincronizando = false;
+        }
+      } catch(err) {}
+    };
+
+    ws.onclose = function() {
+      modoRed = false;
+      mostrarIndicadorRed(false);
+      // Reconectar en 3 segundos
+      setTimeout(conectarServidor, 3000);
+    };
+
+    ws.onerror = function() {
+      modoRed = false;
+      mostrarIndicadorRed(false);
+    };
+  } catch(e) {
+    console.log('[FAMES] Modo sin servidor (archivo local)');
+  }
+}
+
+function enviarEstado() {
+  if (!modoRed || sincronizando || !ws || ws.readyState !== 1) return;
+  var snapshot = {
+    orders: orders,
+    cocina: cocina,
+    salesLog: salesLog,
+    salesByProduct: salesByProduct,
+    cobroNum: cobroNum,
+    comNum: comNum,
+    turnoActivo: turnoActivo,
+    historialTurnos: historialTurnos
+  };
+  try { ws.send(JSON.stringify({ tipo: 'actualizar', data: snapshot })); } catch(e) {}
+}
+
+function aplicarEstado(data) {
+  if (data.orders !== undefined) orders = data.orders;
+  if (data.cocina !== undefined) cocina = data.cocina;
+  if (data.salesLog !== undefined) salesLog = data.salesLog;
+  if (data.salesByProduct !== undefined) salesByProduct = data.salesByProduct;
+  if (data.cobroNum !== undefined) cobroNum = data.cobroNum;
+  if (data.comNum !== undefined) comNum = data.comNum;
+  if (data.turnoActivo !== undefined && data.turnoActivo) turnoActivo = data.turnoActivo;
+  if (data.historialTurnos !== undefined) historialTurnos = data.historialTurnos;
+  // Refrescar UI
+  try { renderMesaTabs(); } catch(e) {}
+  try { renderOrder(); } catch(e) {}
+  try { updateCocinaBadge(); } catch(e) {}
+  var tabCocina = document.getElementById('tab-cocina');
+  if (tabCocina && tabCocina.style.display !== 'none') try { renderCocina(); } catch(e) {}
+}
+
+function mostrarIndicadorRed(conectado) {
+  var el = document.getElementById('red-status');
+  if (!el) {
+    el = document.createElement('span');
+    el.id = 'red-status';
+    el.style.cssText = 'font-size:11px;padding:3px 8px;border-radius:4px;border:1px solid;margin-right:4px;';
+    var header = document.querySelector('.header-info');
+    if (header) header.insertBefore(el, header.firstChild);
+  }
+  if (conectado) {
+    el.textContent = '🟢 Red activa';
+    el.style.borderColor = '#1D9E75';
+    el.style.color = '#1D9E75';
+  } else {
+    el.textContent = '🔴 Sin conexión';
+    el.style.borderColor = '#E24B4A';
+    el.style.color = '#E24B4A';
+  }
+}
+
+// Interceptar funciones que modifican estado para sincronizar
+var _cobrar = cobrar;
+cobrar = function() { _cobrar(); enviarEstado(); };
+
+var _cobrarComanda = cobrarComanda;
+cobrarComanda = function(cid) { _cobrarComanda(cid); enviarEstado(); };
+
+var _enviarCocina = enviarCocina;
+enviarCocina = function() { _enviarCocina(); enviarEstado(); };
+
+var _limpiarPedido = limpiarPedido;
+limpiarPedido = function() { _limpiarPedido(); enviarEstado(); };
+
+var _addItem = addItem;
+addItem = function(id) { _addItem(id); enviarEstado(); };
+
+var _changeQty = changeQty;
+changeQty = function(id,d) { _changeQty(id,d); enviarEstado(); };
+
+// Solo conectar si estamos en un servidor (no archivo local)
+if (window.location.protocol !== 'file:') {
+  conectarServidor();
+}
 </script>
 </body>
 </html>
