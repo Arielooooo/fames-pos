@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>FAMES — Repartidor</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600&display=swap');
+  :root{--naranja:#F47C20;--negro:#0a0a0a;--gris-oscuro:#1C1C1C;--gris-panel:#242424;--gris-borde:#2e2e2e;--gris-texto:#888;--blanco:#F5F5F0;--verde:#1D9E75;--rojo:#E24B4A;--azul:#185FA5;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'DM Sans',sans-serif;background:var(--negro);color:var(--blanco);min-height:100vh;}
+
+  /* HEADER */
+  .header{background:var(--gris-oscuro);border-bottom:1px solid var(--gris-borde);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;}
+  .header-logo{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:3px;color:var(--naranja);}
+  .header-sub{font-size:11px;color:var(--gris-texto);}
+  .estado-dot{width:10px;height:10px;border-radius:50%;background:var(--rojo);display:inline-block;margin-right:5px;}
+  .estado-dot.conectado{background:var(--verde);}
+  .estado-txt{font-size:11px;color:var(--gris-texto);}
+
+  /* TABS */
+  .tabs{display:grid;grid-template-columns:1fr 1fr;background:var(--gris-oscuro);border-bottom:1px solid var(--gris-borde);}
+  .tab{padding:11px;text-align:center;font-size:13px;font-weight:500;color:var(--gris-texto);cursor:pointer;border-bottom:2px solid transparent;}
+  .tab.active{color:var(--naranja);border-bottom-color:var(--naranja);}
+
+  /* CONTENIDO */
+  .content{padding:16px;}
+
+  /* TARJETA PEDIDO */
+  .pedido-card{background:var(--gris-panel);border:2px solid var(--naranja);border-radius:14px;padding:18px;margin-bottom:14px;position:relative;}
+  .pedido-card.en-camino{border-color:var(--azul);}
+  .pedido-card.entregado{border-color:var(--gris-borde);opacity:.5;}
+  .pedido-num{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:3px;color:var(--naranja);}
+  .pedido-card.en-camino .pedido-num{color:#B5D4F4;}
+  .pedido-estado-badge{position:absolute;top:16px;right:16px;font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;}
+  .badge-pendiente{background:rgba(244,124,32,.15);color:var(--naranja);border:1px solid var(--naranja);}
+  .badge-camino{background:rgba(24,95,165,.15);color:#B5D4F4;border:1px solid #185FA5;}
+  .badge-entregado{background:rgba(29,158,117,.15);color:var(--verde);border:1px solid var(--verde);}
+
+  .pedido-info-row{display:flex;align-items:flex-start;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid var(--gris-borde);}
+  .pedido-info-icon{font-size:18px;flex-shrink:0;margin-top:1px;}
+  .pedido-info-content{flex:1;}
+  .pedido-info-label{font-size:10px;color:var(--gris-texto);text-transform:uppercase;letter-spacing:.04em;}
+  .pedido-info-val{font-size:14px;color:var(--blanco);font-weight:500;margin-top:1px;line-height:1.4;}
+  .pedido-info-val.tel a{color:#B5D4F4;text-decoration:none;font-size:16px;font-weight:600;}
+
+  /* PRODUCTOS */
+  .productos-list{margin-top:12px;padding-top:12px;border-top:1px solid var(--gris-borde);}
+  .producto-row{display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px dashed var(--gris-borde);}
+  .producto-row:last-child{border-bottom:none;}
+  .producto-qty{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--naranja);min-width:26px;}
+  .producto-nombre{font-size:13px;color:var(--blanco);font-weight:500;}
+  .producto-spec{font-size:11px;color:var(--gris-texto);margin-top:2px;}
+
+  /* PAGO */
+  .pago-row{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid var(--gris-borde);}
+  .pago-metodo{font-size:13px;color:var(--gris-texto);}
+  .pago-total{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:2px;color:var(--blanco);}
+  .pago-cobrar{font-size:11px;color:var(--rojo);font-weight:600;}
+  .pago-ya-pagado{font-size:11px;color:var(--verde);font-weight:600;}
+
+  /* BOTONES ACCIÓN */
+  .btn-accion{width:100%;padding:14px;border-radius:10px;border:none;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;cursor:pointer;margin-top:14px;transition:all .15s;}
+  .btn-salir{background:var(--azul);color:white;}
+  .btn-salir:hover{background:#0f3d6e;}
+  .btn-entregado{background:var(--verde);color:white;}
+  .btn-entregado:hover{background:#0F6E56;}
+
+  /* VACÍO */
+  .empty{text-align:center;padding:60px 20px;color:var(--gris-texto);}
+  .empty-icon{font-size:56px;margin-bottom:16px;}
+  .empty-title{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:3px;color:var(--blanco);margin-bottom:8px;}
+  .empty-sub{font-size:13px;line-height:1.6;}
+
+  /* HISTORIAL */
+  .hist-card{background:var(--gris-panel);border:1px solid var(--gris-borde);border-radius:10px;padding:14px;margin-bottom:10px;opacity:.7;}
+  .hist-num{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--gris-texto);}
+  .hist-det{font-size:12px;color:var(--gris-texto);margin-top:4px;}
+
+  /* CONEXIÓN */
+  .conexion-bar{background:var(--rojo);color:white;text-align:center;font-size:12px;padding:6px;display:none;}
+  .conexion-bar.show{display:block;}
+
+  /* ACTUALIZAR */
+  .btn-refresh{background:transparent;border:1px solid var(--gris-borde);color:var(--gris-texto);padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;}
+  .btn-refresh:hover{border-color:var(--naranja);color:var(--naranja);}
+
+  .hora-pedido{font-size:11px;color:var(--gris-texto);margin-top:2px;}
+</style>
+</head>
+<body>
+
+<div class="conexion-bar" id="conexion-bar">🔴 Sin conexión al servidor — reconectando...</div>
+
+<div class="header">
+  <div>
+    <div class="header-logo">FAMES 🛵</div>
+    <div class="header-sub">Vista del repartidor</div>
+  </div>
+  <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+    <div><span class="estado-dot" id="estado-dot"></span><span class="estado-txt" id="estado-txt">Conectando...</span></div>
+    <button class="btn-refresh" onclick="cargarEstado()">↻ Actualizar</button>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" id="tab-pendientes" onclick="showTab('pendientes')">🛵 Pendientes <span id="badge-pend"></span></div>
+  <div class="tab" id="tab-historial" onclick="showTab('historial')">✓ Entregados</div>
+</div>
+
+<div class="content" id="content-pendientes"></div>
+<div class="content" id="content-historial" style="display:none;"></div>
+
+<script>
+var POS_URL = window.location.origin;
+var ws = null;
+var domicilios = [];
+var tabActual = 'pendientes';
+
+function conectar(){
+  try {
+    ws = new WebSocket('ws://'+window.location.host);
+    ws.onopen = function(){
+      setConexion(true);
+    };
+    ws.onmessage = function(e){
+      try {
+        var msg = JSON.parse(e.data);
+        if(msg.tipo==='estado' && msg.data.domicilios){
+          domicilios = msg.data.domicilios || [];
+          renderTodo();
+        }
+        if(msg.tipo==='nuevo_pedido_online'){
+          // Vibrar si el dispositivo lo soporta
+          if(navigator.vibrate) navigator.vibrate([200,100,200]);
+          cargarEstado();
+        }
+      } catch(e){}
+    };
+    ws.onclose = function(){
+      setConexion(false);
+      setTimeout(conectar, 3000);
+    };
+    ws.onerror = function(){ setConexion(false); };
+  } catch(e){ setConexion(false); }
+}
+
+function setConexion(ok){
+  document.getElementById('estado-dot').className = 'estado-dot'+(ok?' conectado':'');
+  document.getElementById('estado-txt').textContent = ok ? 'Conectado' : 'Sin conexión';
+  document.getElementById('conexion-bar').className = 'conexion-bar'+(ok?'':' show');
+}
+
+function cargarEstado(){
+  fetch(POS_URL+'/api/estado')
+    .then(function(r){return r.json();})
+    .then(function(data){
+      domicilios = data.domicilios || [];
+      renderTodo();
+      setConexion(true);
+    })
+    .catch(function(){ setConexion(false); });
+}
+
+function enviarCambio(domId, nuevoEstado){
+  // Enviar actualización al servidor
+  fetch(POS_URL+'/api/estado', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({domicilios: domicilios})
+  }).catch(function(){});
+  // También por WebSocket
+  if(ws && ws.readyState===1){
+    try{ ws.send(JSON.stringify({tipo:'actualizar', data:{domicilios:domicilios}})); }catch(e){}
+  }
+}
+
+function cambiarEstado(id, nuevoEstado){
+  for(var i=0;i<domicilios.length;i++){
+    if(domicilios[i].id===id){
+      domicilios[i].estado=nuevoEstado;
+      break;
+    }
+  }
+  enviarCambio(id, nuevoEstado);
+  renderTodo();
+}
+
+var pagoIcons = {efectivo:'💵 Efectivo — COBRAR AL ENTREGAR', transferencia:'📲 Transferencia — Ya pagado / verificar', tarjeta:'💳 Tarjeta — Cobrar con terminal'};
+var estadoLabels = {pendiente:'⏳ Pendiente', en_camino:'🛵 En camino', entregado:'✓ Entregado'};
+var estadoBadge = {pendiente:'badge-pendiente', en_camino:'badge-camino', entregado:'badge-entregado'};
+var cardClass = {pendiente:'', en_camino:' en-camino', entregado:' entregado'};
+
+function renderTodo(){
+  renderPendientes();
+  renderHistorial();
+  // Badge
+  var pend = domicilios.filter(function(d){return d.estado!=='entregado';}).length;
+  document.getElementById('badge-pend').textContent = pend ? '('+pend+')' : '';
+}
+
+function renderPendientes(){
+  var pendientes = domicilios.filter(function(d){return d.estado!=='entregado';});
+  var el = document.getElementById('content-pendientes');
+  if(!pendientes.length){
+    el.innerHTML = '<div class="empty"><div class="empty-icon">🎉</div><div class="empty-title">Todo entregado</div><div class="empty-sub">No hay pedidos pendientes por entregar.</div></div>';
+    return;
+  }
+  var html = '';
+  pendientes.forEach(function(d){
+    var esCobrar = d.pago==='efectivo';
+    var itemsHtml = '';
+    (d.items||[]).forEach(function(it){
+      itemsHtml += '<div class="producto-row">';
+      itemsHtml += '<span class="producto-qty">'+(it.qty||1)+'x</span>';
+      itemsHtml += '<div><div class="producto-nombre">'+(it.emoji||'🍔')+' '+(it.name||it.item&&it.item.name||'')+'</div>';
+      if(it.spec) itemsHtml += '<div class="producto-spec">'+it.spec+'</div>';
+      itemsHtml += '</div></div>';
+    });
+
+    html += '<div class="pedido-card'+cardClass[d.estado]+'">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;">';
+    html += '<div><div class="pedido-num">'+(d.label||'DOM-'+d.id)+'</div><div class="hora-pedido">'+d.hora+'</div></div>';
+    html += '<span class="pedido-estado-badge '+estadoBadge[d.estado]+'">'+estadoLabels[d.estado]+'</span>';
+    html += '</div>';
+
+    // Cliente
+    html += '<div class="pedido-info-row"><div class="pedido-info-icon">👤</div><div class="pedido-info-content"><div class="pedido-info-label">Cliente</div><div class="pedido-info-val">'+d.nombre+'</div></div></div>';
+
+    // Teléfono
+    if(d.telefono){
+      html += '<div class="pedido-info-row"><div class="pedido-info-icon">📞</div><div class="pedido-info-content"><div class="pedido-info-label">Teléfono</div><div class="pedido-info-val tel"><a href="tel:'+d.telefono+'">'+d.telefono+'</a></div></div></div>';
+    }
+
+    // Dirección
+    if(d.direccion && d.direccion!=='RECOGER EN RESTAURANTE'){
+      html += '<div class="pedido-info-row"><div class="pedido-info-icon">📍</div><div class="pedido-info-content"><div class="pedido-info-label">Dirección</div><div class="pedido-info-val">'+d.direccion+'</div></div></div>';
+    } else if(d.tipoPedido==='recoger'){
+      html += '<div class="pedido-info-row"><div class="pedido-info-icon">🏪</div><div class="pedido-info-content"><div class="pedido-info-label">Tipo</div><div class="pedido-info-val">Recoger en restaurante</div></div></div>';
+    }
+
+    // Notas
+    if(d.notas){
+      html += '<div class="pedido-info-row"><div class="pedido-info-icon">📝</div><div class="pedido-info-content"><div class="pedido-info-label">Notas</div><div class="pedido-info-val" style="color:var(--naranja);">'+d.notas+'</div></div></div>';
+    }
+
+    // Productos
+    html += '<div class="productos-list">'+itemsHtml+'</div>';
+
+    // Pago y total
+    html += '<div class="pago-row">';
+    html += '<div><div class="pago-metodo">'+(pagoIcons[d.pago]||'💵 Efectivo')+'</div>';
+    html += esCobrar ? '<div class="pago-cobrar">⚠ COBRAR $'+Number(d.total).toFixed(2)+'</div>' : '<div class="pago-ya-pagado">✓ Pago por '+d.pago+'</div>';
+    html += '</div>';
+    html += '<div class="pago-total">$'+Number(d.total).toFixed(2)+'</div>';
+    html += '</div>';
+
+    // Botones
+    if(d.estado==='pendiente'){
+      html += '<button class="btn-accion btn-salir" onclick="cambiarEstado('+d.id+',\'en_camino\')">🛵 SALÍ A ENTREGAR</button>';
+    } else if(d.estado==='en_camino'){
+      html += '<button class="btn-accion btn-entregado" onclick="cambiarEstado('+d.id+',\'entregado\')">✓ PEDIDO ENTREGADO</button>';
+    }
+
+    html += '</div>';
+  });
+  el.innerHTML = html;
+}
+
+function renderHistorial(){
+  var entregados = domicilios.filter(function(d){return d.estado==='entregado';}).reverse();
+  var el = document.getElementById('content-historial');
+  if(!entregados.length){
+    el.innerHTML='<div class="empty"><div class="empty-icon">📦</div><div class="empty-title">Sin entregas aún</div><div class="empty-sub">Aquí aparecerán los pedidos ya entregados.</div></div>';
+    return;
+  }
+  var html='';
+  entregados.forEach(function(d){
+    html+='<div class="hist-card">';
+    html+='<div style="display:flex;justify-content:space-between;"><span class="hist-num">'+(d.label||'DOM-'+d.id)+'</span><span style="font-family:\'Bebas Neue\',sans-serif;font-size:20px;color:var(--verde);">$'+Number(d.total).toFixed(2)+'</span></div>';
+    html+='<div class="hist-det">'+d.nombre+' · '+d.hora+'</div>';
+    if(d.direccion&&d.direccion!=='RECOGER EN RESTAURANTE') html+='<div class="hist-det">📍 '+d.direccion+'</div>';
+    html+='</div>';
+  });
+  el.innerHTML=html;
+}
+
+function showTab(tab){
+  tabActual=tab;
+  ['pendientes','historial'].forEach(function(t){
+    document.getElementById('tab-'+t).className='tab'+(t===tab?' active':'');
+    document.getElementById('content-'+t).style.display=t===tab?'block':'none';
+  });
+}
+
+// Auto-actualizar cada 30 segundos
+setInterval(cargarEstado, 30000);
+cargarEstado();
+conectar();
+</script>
+</body>
+</html>
