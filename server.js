@@ -1,148 +1,113 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
-const WebSocket = require('ws');
 
 const PORT = process.env.PORT || 3000;
 
-// Estado compartido
+// Estado compartido en memoria
 let estado = {
-  orders: {}, cocina: [], domicilios: [], salesLog: [],
-  salesByProduct: {}, cobroNum: 0, comNum: 0, domNum: 0,
-  turnoActivo: null, historialTurnos: []
+  domicilios: [],
+  domNum: 0
 };
 
-// Headers CORS para que Railway no bloquee nada
-function setCORSHeaders(res) {
+const ARCHIVOS = {
+  '/':           'FAMES_PuntoDeVenta.html',
+  '/pos':        'FAMES_PuntoDeVenta.html',
+  '/pedidos':    'FAMES_Pedidos.html',
+  '/repartidor': 'FAMES_Repartidor.html'
+};
+
+function cors(res){
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 }
 
-// Servidor HTTP
-const server = http.createServer((req, res) => {
-  setCORSHeaders(res);
+function json(res, code, data){
+  res.writeHead(code, {'Content-Type':'application/json'});
+  res.end(JSON.stringify(data));
+}
 
-  // Preflight OPTIONS
-  if (req.method === 'OPTIONS') {
-    res.writeHead(204);
-    res.end();
+const server = http.createServer((req, res) => {
+  cors(res);
+  const url = req.url.split('?')[0];
+
+  if(req.method === 'OPTIONS'){
+    res.writeHead(204); res.end(); return;
+  }
+
+  // Servir HTML
+  if(ARCHIVOS[url]){
+    const fp = path.join(__dirname, ARCHIVOS[url]);
+    fs.readFile(fp, (err, data) => {
+      if(err){ res.writeHead(404); res.end('No encontrado: '+ARCHIVOS[url]); return; }
+      res.writeHead(200, {'Content-Type':'text/html;charset=utf-8'});
+      res.end(data);
+    });
     return;
   }
 
-  const url = req.url.split('?')[0];
+  // GET /api/estado — el POS y repartidor leen esto
+  if(url === '/api/estado' && req.method === 'GET'){
+    json(res, 200, {ok:true, data:estado});
+    return;
+  }
 
-  // Rutas de archivos HTML
-  if (url === '/' || url === '/pos') {
-    servirArchivo(res, 'FAMES_PuntoDeVenta.html');
-  } else if (url === '/pedidos') {
-    servirArchivo(res, 'FAMES_Pedidos.html');
-  } else if (url === '/repartidor') {
-    servirArchivo(res, 'FAMES_Repartidor.html');
-
-  // API: obtener estado
-  } else if (url === '/api/estado' && req.method === 'GET') {
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ ok: true, data: estado }));
-
-  // API: recibir pedido online
-  } else if (url === '/api/pedido-online' && req.method === 'POST') {
+  // POST /api/pedido-online — cliente envía pedido
+  if(url === '/api/pedido-online' && req.method === 'POST'){
     let body = '';
-    req.on('data', chunk => { body += chunk.toString(); });
+    req.on('data', c => body += c.toString());
     req.on('end', () => {
       try {
         const pedido = JSON.parse(body);
-
-        // Validar campos mínimos
-        if (!pedido.nombre || !pedido.items || !pedido.items.length) {
-          res.writeHead(400, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ ok: false, error: 'Datos incompletos' }));
-          return;
+        if(!pedido.nombre || !pedido.items || !pedido.items.length){
+          json(res, 400, {ok:false, error:'Faltan datos'}); return;
         }
-
-        // Asignar ID
-        estado.domNum = (estado.domNum || 0) + 1;
-        pedido.id = estado.domNum;
+        estado.domNum++;
+        pedido.id    = estado.domNum;
         pedido.label = 'DOM-' + estado.domNum;
         pedido.estado = 'pendiente';
         pedido.origen = 'online';
-
-        if (!estado.domicilios) estado.domicilios = [];
         estado.domicilios.push(pedido);
-
-        // Notificar a todos los clientes WebSocket conectados
-        const msg = JSON.stringify({ tipo: 'nuevo_pedido_online', data: pedido });
-        const estadoMsg = JSON.stringify({ tipo: 'estado', data: estado });
-        wss.clients.forEach(client => {
-          if (client.readyState === WebSocket.OPEN) {
-            try { client.send(msg); } catch(e) {}
-            try { client.send(estadoMsg); } catch(e) {}
-          }
-        });
-
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ ok: true, id: pedido.label }));
-
-      } catch(e) {
-        console.error('Error procesando pedido:', e.message);
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ ok: false, error: 'Error interno' }));
+        console.log('✅ Pedido recibido:', pedido.label, '-', pedido.nombre, '- $'+pedido.total);
+        json(res, 200, {ok:true, id:pedido.label});
+      } catch(e){
+        console.error('Error pedido:', e.message);
+        json(res, 500, {ok:false, error:e.message});
       }
     });
-    req.on('error', (e) => {
-      console.error('Error en request:', e.message);
-      res.writeHead(500);
-      res.end();
-    });
-
-  } else {
-    res.writeHead(404, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ ok: false, error: 'No encontrado' }));
+    return;
   }
-});
 
-function servirArchivo(res, nombre) {
-  const filePath = path.join(__dirname, nombre);
-  fs.readFile(filePath, (err, data) => {
-    if (err) {
-      res.writeHead(404, { 'Content-Type': 'text/plain' });
-      res.end('Archivo no encontrado: ' + nombre);
-      return;
-    }
-    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-    res.end(data);
-  });
-}
-
-// WebSocket
-const wss = new WebSocket.Server({ server });
-
-wss.on('connection', (ws) => {
-  // Enviar estado actual al conectarse
-  try {
-    ws.send(JSON.stringify({ tipo: 'estado', data: estado }));
-  } catch(e) {}
-
-  ws.on('message', (msg) => {
-    try {
-      const data = JSON.parse(msg.toString());
-      if (data.tipo === 'actualizar') {
-        // Merge del estado
-        Object.keys(data.data).forEach(k => { estado[k] = data.data[k]; });
-        // Broadcast a todos los demás
-        wss.clients.forEach(client => {
-          if (client !== ws && client.readyState === WebSocket.OPEN) {
-            try { client.send(JSON.stringify({ tipo: 'estado', data: estado })); } catch(e) {}
-          }
-        });
+  // POST /api/sync — POS y repartidor sincronizan estados de domicilios
+  if(url === '/api/sync' && req.method === 'POST'){
+    let body = '';
+    req.on('data', c => body += c.toString());
+    req.on('end', () => {
+      try {
+        const data = JSON.parse(body);
+        if(data.domicilios && Array.isArray(data.domicilios)){
+          // Actualizar estados de domicilios existentes
+          data.domicilios.forEach(function(d){
+            const idx = estado.domicilios.findIndex(x => x.id === d.id);
+            if(idx >= 0){
+              estado.domicilios[idx].estado = d.estado;
+            }
+          });
+        }
+        json(res, 200, {ok:true});
+      } catch(e){
+        json(res, 500, {ok:false, error:e.message});
       }
-    } catch(e) {}
-  });
+    });
+    return;
+  }
 
-  ws.on('error', () => {});
-  ws.on('close', () => {});
+  json(res, 404, {ok:false, error:'Ruta no encontrada: '+url});
 });
+
+server.on('error', e => console.error('Server error:', e.message));
 
 server.listen(PORT, '0.0.0.0', () => {
-  console.log('FAMES POS corriendo en puerto ' + PORT);
+  console.log('🍔 FAMES POS corriendo en puerto ' + PORT);
 });
