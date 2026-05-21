@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FAMES — Pedidos en línea</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600&display=swap');
+:root{--naranja:#F47C20;--negro:#111;--gris:#1C1C1C;--gris2:#242424;--borde:#333;--texto:#888;--blanco:#F5F5F0;--verde:#1D9E75;--rojo:#E24B4A;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--negro);color:var(--blanco);min-height:100vh;}
+header{background:var(--gris);border-bottom:1px solid var(--borde);padding:14px 20px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100;}
+.logo{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:4px;color:var(--naranja);}
+.cart-btn{padding:7px 14px;border-radius:8px;border:1px solid var(--naranja);background:transparent;color:var(--naranja);font-size:13px;cursor:pointer;font-weight:500;}
+.cart-btn:hover{background:rgba(244,124,32,.1);}
+.hero{text-align:center;padding:28px 20px 14px;border-bottom:1px solid var(--borde);}
+.hero h1{font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:3px;color:var(--naranja);}
+.hero p{font-size:12px;color:var(--texto);margin-top:5px;}
+.sec-tabs{display:flex;overflow-x:auto;gap:6px;padding:12px 16px;border-bottom:1px solid var(--borde);scrollbar-width:none;}
+.sec-tabs::-webkit-scrollbar{display:none;}
+.stab{padding:5px 13px;border-radius:15px;border:1px solid var(--borde);background:transparent;color:var(--texto);font-size:11px;cursor:pointer;white-space:nowrap;font-family:'DM Sans',sans-serif;}
+.stab:hover{border-color:var(--naranja);color:var(--naranja);}
+.stab.active{border-color:var(--naranja);background:rgba(244,124,32,.1);color:var(--naranja);}
+.menu-sec{padding:10px 14px 0;}
+.sec-title{font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--texto);margin:10px 0 7px;padding-bottom:5px;border-bottom:1px solid var(--borde);}
+.mgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:8px;margin-bottom:8px;}
+.mitem{background:var(--gris2);border:1px solid var(--borde);border-radius:9px;padding:11px;cursor:pointer;user-select:none;position:relative;}
+.mitem:hover{border-color:var(--naranja);}
+.mitem.en-carrito{border-color:var(--verde);}
+.mname{font-size:13px;font-weight:500;}
+.mprice{font-size:12px;color:var(--naranja);margin-top:3px;font-weight:600;}
+.mdesc{font-size:10px;color:var(--texto);margin-top:3px;line-height:1.4;}
+.mcount{position:absolute;top:7px;right:7px;background:var(--verde);color:white;border-radius:50%;width:18px;height:18px;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;}
+/* CARRITO */
+.cart-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:200;display:none;align-items:flex-end;}
+.cart-overlay.show{display:flex;}
+.cart-panel{background:var(--gris);border-radius:16px 16px 0 0;width:100%;max-height:92vh;display:flex;flex-direction:column;}
+.cart-header{padding:16px 18px;border-bottom:1px solid var(--borde);display:flex;justify-content:space-between;align-items:center;}
+.cart-title{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;}
+.cart-close{background:transparent;border:none;color:var(--texto);font-size:18px;cursor:pointer;}
+.cart-items{padding:10px 16px;}
+.cart-empty{text-align:center;padding:35px;color:var(--texto);font-size:13px;}
+.cart-row{display:flex;align-items:center;gap:9px;padding:8px 0;border-bottom:1px solid var(--borde);}
+.cart-name{flex:1;font-size:13px;}
+.qctrl{display:flex;align-items:center;gap:5px;}
+.qbtn{width:22px;height:22px;border:1px solid var(--borde);border-radius:5px;background:var(--gris2);color:var(--blanco);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;}
+.qnum{font-size:13px;min-width:16px;text-align:center;}
+.cart-sub{font-size:12px;color:var(--texto);min-width:52px;text-align:right;}
+/* CHECKOUT */
+.checkout{padding:14px 16px;border-top:1px solid var(--borde);background:var(--negro);}
+.chk-label{font-size:10px;color:var(--texto);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;margin-top:8px;display:block;}
+.chk-inp{width:100%;background:var(--gris2);border:1px solid var(--borde);border-radius:7px;color:var(--blanco);font-size:13px;padding:9px 11px;font-family:'DM Sans',sans-serif;margin-bottom:4px;}
+.chk-inp:focus{outline:none;border-color:var(--naranja);}
+.pago-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-bottom:8px;}
+.pago-btn{padding:7px 2px;border-radius:7px;border:1px solid var(--borde);background:transparent;color:var(--texto);font-size:11px;font-weight:500;cursor:pointer;text-align:center;font-family:'DM Sans',sans-serif;}
+.pago-btn.active{border-color:var(--verde);background:rgba(29,158,117,.12);color:var(--verde);font-weight:600;}
+.tipo-btn{padding:7px 2px;border-radius:7px;border:1px solid var(--borde);background:transparent;color:var(--texto);font-size:11px;font-weight:500;cursor:pointer;text-align:center;font-family:'DM Sans',sans-serif;}
+.tipo-btn:hover{border-color:var(--naranja);color:var(--naranja);}
+.tipo-btn.active{border-color:var(--naranja);background:rgba(244,124,32,.12);color:var(--naranja);font-weight:600;}
+.total-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;}
+.total-lbl{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:var(--texto);}
+.total-val{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:2px;}
+.btn-pedir{width:100%;padding:13px;border-radius:9px;border:none;background:var(--verde);color:white;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;cursor:pointer;}
+.btn-pedir:hover{background:#0F6E56;}
+.btn-pedir:disabled{background:var(--borde);cursor:not-allowed;}
+/* CONFIRMACIÓN */
+.confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:300;display:none;align-items:center;justify-content:center;}
+.confirm-overlay.show{display:flex;}
+.confirm-card{background:var(--gris);border:1px solid var(--borde);border-radius:14px;padding:30px 24px;width:320px;text-align:center;}
+.confirm-icon{font-size:52px;margin-bottom:12px;}
+.confirm-title{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:3px;color:var(--verde);margin-bottom:8px;}
+.confirm-sub{font-size:13px;color:var(--texto);line-height:1.7;}
+.confirm-id{font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--naranja);margin:10px 0;}
+.btn-nuevo{margin-top:16px;width:100%;padding:10px;border-radius:8px;border:1px solid var(--naranja);background:transparent;color:var(--naranja);font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:2px;cursor:pointer;}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(10px);background:var(--verde);color:white;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:500;opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;z-index:999;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast.err{background:var(--rojo);}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">FAMES</div>
+  <button class="cart-btn" id="btn-cart">🛒 Ver carrito (<span id="cart-count">0</span>)</button>
+</header>
+
+<div class="hero">
+  <h1>Hamburguesas · Alitas · Snacks</h1>
+  <p>Haz tu pedido en línea · Dom-Jue 4pm-11pm · Vie-Sáb 4pm-12am</p>
+</div>
+
+<div class="sec-tabs" id="sec-tabs"></div>
+<div id="menu-container"></div>
+
+<!-- CARRITO -->
+<div class="cart-overlay" id="cart-overlay">
+  <div class="cart-panel">
+    <div class="cart-header">
+      <span class="cart-title">🛒 Tu pedido</span>
+      <button class="cart-close" id="cart-close">✕</button>
+    </div>
+    <div style="flex:1;overflow-y:auto;"><div class="cart-items" id="cart-items">
+      <div class="cart-empty">Tu carrito está vacío</div>
+    </div>
+    <div class="checkout">
+      <label class="chk-label">Tu nombre *</label>
+      <input class="chk-inp" id="chk-nombre" placeholder="Ej: Juan García">
+      <label class="chk-label">Teléfono *</label>
+      <input class="chk-inp" id="chk-tel" type="tel" placeholder="55 1234 5678">
+      <label class="chk-label">¿Cómo quieres recibir tu pedido?</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:8px;">
+        <button class="tipo-btn active" id="tipo-dom">🛵 A domicilio</button>
+        <button class="tipo-btn" id="tipo-rec">🏠 Recoger</button>
+      </div>
+      <div id="div-dir">
+        <label class="chk-label">Dirección de entrega *</label>
+        <input class="chk-inp" id="chk-dir" placeholder="Calle, número, colonia...">
+      </div>
+      <label class="chk-label">Notas</label>
+      <input class="chk-inp" id="chk-notas" placeholder="Sin picante, sin cebolla...">
+      <label class="chk-label">Método de pago</label>
+      <div class="pago-grid">
+        <button class="pago-btn active" data-pago="efectivo">💵 Efectivo</button>
+        <button class="pago-btn" data-pago="transferencia">📲 Transfer.</button>
+        <button class="pago-btn" data-pago="tarjeta">💳 Tarjeta</button>
+      </div>
+      <div class="total-row">
+        <span class="total-lbl">Total</span>
+        <span class="total-val" id="cart-total">$0.00</span>
+      </div>
+      <button class="btn-pedir" id="btn-pedir">ENVIAR PEDIDO</button>
+    </div></div>
+  </div>
+</div>
+
+<!-- CONFIRMACIÓN -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-card">
+    <div class="confirm-icon">🎉</div>
+    <div class="confirm-title">¡Pedido recibido!</div>
+    <div class="confirm-id" id="confirm-id">DOM-0</div>
+    <div class="confirm-sub">Tu pedido fue enviado a la cocina.<br>Te avisamos cuando salga a domicilio.</div>
+    <button class="btn-nuevo" id="btn-nuevo-pedido">HACER OTRO PEDIDO</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var MENU = {
+  burgers:{title:'🍔 Hamburguesas',items:[
+    {id:'bu1',name:'Simplex',price:80,desc:'Res, amarillo, lechuga, jitomate, cebolla'},
+    {id:'bu2',name:'Hawaiian',price:95,desc:'Res, oaxaca, piña, jamón, lechuga'},
+    {id:'bu3',name:'Duplex tocino',price:100,desc:'Res, amarillo, tocino, lechuga'},
+    {id:'bu4',name:'Duplex salchicha',price:100,desc:'Res, oaxaca, salchichas, lechuga'},
+    {id:'bu5',name:'Triplex queso',price:100,desc:'Res, oaxaca, manchego, amarillo'}
+  ]},
+  especiales:{title:'⭐ Especialidades',items:[
+    {id:'es1',name:'Argentum',price:100,desc:'Res, manchego, chorizo arg, chimichurri'},
+    {id:'es2',name:'Mexicum',price:100,desc:'Res, oaxaca, aguacate, longaniza'},
+    {id:'es3',name:'Duplex carne',price:130,desc:'Doble res, doble amarillo'},
+    {id:'es4',name:'Porcus',price:100,desc:'Res, oaxaca, tocino, salchicha, bbq'},
+    {id:'es5',name:'Pollum',price:100,desc:'Tenders pollo, manchego'},
+    {id:'es6',name:'Dedos burger',price:130,desc:'Res, oaxaca, 3 dedos queso'},
+    {id:'es7',name:'Bonneles burger',price:130,desc:'Res, amarillo, 150g boneless'}
+  ]},
+  jochos:{title:'🌭 Jochos',items:[
+    {id:'jo1',name:'Orden 3pz',price:90,desc:'3 salchichas, tocino, manchego'},
+    {id:'jo2',name:'1/4 de Libra',price:85,desc:'Salchicha 1/4 libra, tocino, manchego'},
+    {id:'jo3',name:'Choripan',price:90,desc:'Chorizo arg, manchego, chimichurri'}
+  ]},
+  snacks:{title:'🍟 Snacks',items:[
+    {id:'sn1',name:'Papas francesa',price:50,desc:'250gr'},
+    {id:'sn2',name:'Papas gajo',price:60,desc:'250gr'},
+    {id:'sn3',name:'Papas monster',price:80,desc:'250gr + chorizo'},
+    {id:'sn4',name:'Bonneles con papas',price:100,desc:'280g boneless + 100g francesa'},
+    {id:'sn5',name:'Dedos de queso',price:70,desc:'5pz + 100g francesa'},
+    {id:'sn6',name:'Salchi-Pulpos',price:60,desc:'3 salchichas + 100g francesa'}
+  ]},
+  alitas:{title:'🍗 Alitas',items:[
+    {id:'al1',name:'Alitas',price:80,desc:'6pz + 100g francesa'},
+    {id:'al2',name:'Costillas',price:100,desc:'6pz + 100g francesa'}
+  ]},
+  bebidas:{title:'🥤 Bebidas',items:[
+    {id:'be1',name:'Refresco',price:25,desc:'Coca Cola'},
+    {id:'be2',name:'Jugo',price:25,desc:'Boing'},
+    {id:'be3',name:'Sangría preparada',price:55,desc:'Vaso 500ml'}
+  ]},
+  drinks:{title:'🍺 Drinks',items:[
+    {id:'dr1',name:'Jarra de cerveza',price:120,desc:'1 caguama'},
+    {id:'dr2',name:'Michelada',price:90,desc:'Caguama, limón, vaso'},
+    {id:'dr3',name:'Mojito',price:80,desc:'Ron, limón, azúcar, hierbabuena'},
+    {id:'dr4',name:'Azulito',price:80,desc:'Vodka, Blue Curaçao, limón, soda'}
+  ]}
+};
+
+var carrito = {};
+var pagoPedido = 'efectivo';
+var toastTimer = null;
+
+function showToast(msg, type){
+  var t=document.getElementById('toast');if(!t)return;
+  t.textContent=msg;t.className='toast '+(type||'ok')+' show';
+  if(toastTimer)clearTimeout(toastTimer);
+  toastTimer=setTimeout(function(){t.classList.remove('show');},2500);
+}
+
+function renderMenu(){
+  var tabsEl=document.getElementById('sec-tabs');
+  var menuEl=document.getElementById('menu-container');
+  var tabsHtml='', menuHtml='';
+  Object.keys(MENU).forEach(function(k,i){
+    var sec=MENU[k];
+    tabsHtml+='<button class="stab'+(i===0?' active':'')+'" data-sec="'+k+'">'+sec.title+'</button>';
+    menuHtml+='<div class="menu-sec" id="sec-'+k+'">'
+      +'<div class="sec-title">'+sec.title+'</div>'
+      +'<div class="mgrid">'+sec.items.map(function(it){
+        return '<div class="mitem" data-id="'+it.id+'">'
+          +'<div class="mname">'+it.name+'</div>'
+          +'<div class="mprice">$'+it.price+'</div>'
+          +(it.desc?'<div class="mdesc">'+it.desc+'</div>':'')
+          +'<span class="mcount" id="cnt-'+it.id+'" style="display:none;">0</span>'
+          +'</div>';
+      }).join('')+'</div></div>';
+  });
+  tabsEl.innerHTML=tabsHtml;
+  menuEl.innerHTML=menuHtml;
+  tabsEl.querySelectorAll('.stab').forEach(function(tab){
+    tab.addEventListener('click',function(){
+      tabsEl.querySelectorAll('.stab').forEach(function(t){t.classList.remove('active');});
+      this.classList.add('active');
+      var sec=document.getElementById('sec-'+this.getAttribute('data-sec'));
+      if(sec)sec.scrollIntoView({behavior:'smooth',block:'start'});
+    });
+  });
+  menuEl.querySelectorAll('.mitem').forEach(function(card){
+    card.addEventListener('click',function(){addToCart(this.getAttribute('data-id'));});
+  });
+}
+
+function findItem(id){
+  var found=null;
+  Object.keys(MENU).forEach(function(k){MENU[k].items.forEach(function(it){if(it.id===id)found=it;});});
+  return found;
+}
+
+function addToCart(id){
+  var item=findItem(id);if(!item)return;
+  if(!carrito[id])carrito[id]={item:item,qty:0};
+  carrito[id].qty++;
+  updateCartUI();showToast('+'+item.name,'ok');
+}
+
+function changeCartQty(id,d){
+  if(!carrito[id])return;
+  carrito[id].qty+=d;
+  if(carrito[id].qty<=0)delete carrito[id];
+  updateCartUI();
+}
+
+function updateCartUI(){
+  var keys=Object.keys(carrito);
+  var total=0,count=0;
+  keys.forEach(function(id){total+=carrito[id].item.price*carrito[id].qty;count+=carrito[id].qty;});
+  document.getElementById('cart-count').textContent=count;
+  document.getElementById('cart-total').textContent='$'+total.toFixed(2);
+  Object.keys(MENU).forEach(function(k){MENU[k].items.forEach(function(it){
+    var el=document.getElementById('cnt-'+it.id);
+    if(!el)return;
+    var qty=carrito[it.id]?carrito[it.id].qty:0;
+    el.textContent=qty;el.style.display=qty?'flex':'none';
+    var card=document.querySelector('[data-id="'+it.id+'"]');
+    if(card)card.classList.toggle('en-carrito',qty>0);
+  });});
+  var el=document.getElementById('cart-items');
+  if(!keys.length){el.innerHTML='<div class="cart-empty">Tu carrito está vacío</div>';return;}
+  el.innerHTML=keys.map(function(id){
+    var c=carrito[id],s=c.item.price*c.qty;
+    return '<div class="cart-row"><span class="cart-name">'+c.item.name+'</span>'
+      +'<div class="qctrl">'
+      +'<button class="qbtn" data-id="'+id+'" data-d="-1">−</button>'
+      +'<span class="qnum">'+c.qty+'</span>'
+      +'<button class="qbtn" data-id="'+id+'" data-d="1">+</button>'
+      +'</div>'
+      +'<span class="cart-sub">$'+s.toFixed(2)+'</span></div>';
+  }).join('');
+  el.querySelectorAll('.qbtn').forEach(function(btn){
+    btn.addEventListener('click',function(){changeCartQty(this.getAttribute('data-id'),parseInt(this.getAttribute('data-d')));});
+  });
+}
+
+var tipoPedido = 'domicilio';
+
+function selTipo(tipo){
+  tipoPedido=tipo;
+  document.getElementById('tipo-dom').className='tipo-btn'+(tipo==='domicilio'?' active':'');
+  document.getElementById('tipo-rec').className='tipo-btn'+(tipo==='recoger'?' active':'');
+  var dd=document.getElementById('div-dir');
+  if(dd)dd.style.display=tipo==='domicilio'?'block':'none';
+}
+
+function enviarPedido(){
+  var nombre=document.getElementById('chk-nombre').value.trim();
+  var tel=document.getElementById('chk-tel').value.trim();
+  var dirEl=document.getElementById('chk-dir');
+  var dir=dirEl?dirEl.value.trim():'';
+  var notas=document.getElementById('chk-notas').value.trim();
+  var keys=Object.keys(carrito);
+
+  if(!nombre){document.getElementById('chk-nombre').focus();showToast('Ingresa tu nombre','err');return;}
+  if(!tel){document.getElementById('chk-tel').focus();showToast('Ingresa tu teléfono','err');return;}
+  if(tipoPedido==='domicilio'&&!dir){
+    if(dirEl)dirEl.focus();
+    showToast('Ingresa tu dirección de entrega','err');return;
+  }
+  if(!keys.length){showToast('Agrega productos al carrito primero','err');return;}
+
+  var items=[],total=0;
+  keys.forEach(function(id){var c=carrito[id];items.push({id:id,name:c.item.name,price:c.item.price,qty:c.qty});total+=c.item.price*c.qty;});
+
+  var pedido={
+    nombre:nombre,tel:tel,
+    dir:tipoPedido==='recoger'?'RECOGER EN RESTAURANTE':dir,
+    notas:notas,pago:pagoPedido,tipo:tipoPedido,
+    items:items,total:total,
+    hora:new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})
+  };
+
+  var btn=document.getElementById('btn-pedir');
+  btn.disabled=true;btn.textContent='ENVIANDO...';
+
+  function mostrarConfirmacion(id){
+    document.getElementById('confirm-id').textContent=id||'DOM-1';
+    document.getElementById('confirm-overlay').classList.add('show');
+    document.getElementById('cart-overlay').classList.remove('show');
+    carrito={};updateCartUI();
+    btn.disabled=false;btn.textContent='ENVIAR PEDIDO';
+  }
+
+  var intentos=0;
+
+  function intentarEnvio(){
+    intentos++;
+    var xhr=new XMLHttpRequest();
+    xhr.open('POST', '/api/pedido-online', true);
+    xhr.setRequestHeader('Content-Type','application/json');
+    xhr.timeout=10000;
+    xhr.onload=function(){
+      try{
+        var data=JSON.parse(xhr.responseText);
+        if(data.ok){
+          mostrarConfirmacion(data.id);
+        } else {
+          throw new Error(data.error||'Error del servidor');
+        }
+      }catch(e){
+        manejarError(e.message);
+      }
+    };
+    xhr.onerror=function(){ manejarError('Sin conexión'); };
+    xhr.ontimeout=function(){ manejarError('Tiempo agotado'); };
+    xhr.send(JSON.stringify(pedido));
+  }
+
+  function manejarError(msg){
+    console.error('Intento '+intentos+' fallido:',msg);
+    if(intentos<3){
+      btn.textContent='REINTENTANDO...';
+      setTimeout(intentarEnvio,2000);
+    } else {
+      showToast('No se pudo enviar. Intenta de nuevo.','err');
+      btn.disabled=false;btn.textContent='ENVIAR PEDIDO';
+    }
+  }
+
+  intentarEnvio();
+}
+
+document.addEventListener('DOMContentLoaded',function(){
+  renderMenu();
+  document.getElementById('btn-cart').addEventListener('click',function(){document.getElementById('cart-overlay').classList.add('show');});
+  document.getElementById('cart-close').addEventListener('click',function(){document.getElementById('cart-overlay').classList.remove('show');});
+  document.getElementById('cart-overlay').addEventListener('click',function(e){if(e.target===this)this.classList.remove('show');});
+  document.getElementById('btn-pedir').addEventListener('click',enviarPedido);
+  document.getElementById('tipo-dom').addEventListener('click',function(){selTipo('domicilio');});
+  document.getElementById('tipo-rec').addEventListener('click',function(){selTipo('recoger');});
+  document.getElementById('btn-nuevo-pedido').addEventListener('click',function(){document.getElementById('confirm-overlay').classList.remove('show');});
+  document.querySelectorAll('.pago-btn').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      pagoPedido=this.getAttribute('data-pago');
+      document.querySelectorAll('.pago-btn').forEach(function(b){b.classList.remove('active');});
+      this.classList.add('active');
+    });
+  });
+});
+</script>
+</body>
+</html>
