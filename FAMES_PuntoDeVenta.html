@@ -284,6 +284,7 @@ header{background:var(--gris-oscuro);border-bottom:1px solid var(--gris-borde);p
   <div class="logo">FAMES <span style="color:var(--blanco);">·</span> POS</div>
   <div class="header-right">
     <span class="turno-badge" id="turno-badge">Turno</span>
+    <span id="sesiones-disp" style="display:none;font-size:10px;padding:3px 8px;border-radius:5px;border:1px solid var(--verde);color:var(--verde);cursor:pointer;" title="Dispositivos conectados">👥</span>
     <span class="hora-disp" id="hora-disp">--:--</span>
     <button class="btn-h naranja" id="btn-qr">📱 QR</button>
     <button class="btn-h rojo" id="btn-goto-cierre">Cerrar turno</button>
@@ -814,10 +815,22 @@ function abrirTurno(){
   if(app)app.style.display='flex';
   set('turno-badge',fecha+' · '+hora+' · '+empleados.map(function(e){return e.nombre;}).join(', '));
   // Limpiar estado del servidor al abrir turno nuevo
-  if(window.location.protocol!=='file:'){
-    fetch('/api/reset',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}).catch(function(){});
-  }
   ultimoDomNum=0;
+  turnoId = Date.now().toString();
+  if(window.location.protocol!=='file:'){
+    fetch('/api/reset',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({turnoId:turnoId})
+    })
+    .then(function(r){return r.json();})
+    .then(function(data){
+      // Usar el turnoId que confirma el servidor
+      if(data.turnoId) turnoId=data.turnoId;
+      console.log('Turno abierto con ID:',turnoId);
+    })
+    .catch(function(){});
+  }
   initApp();
 }
 
@@ -1434,8 +1447,13 @@ function exportarCSV(){
 function cerrarTurno(){
   if(!confirm('¿Cerrar el turno? Se guardará en el historial.'))return;
   // Limpiar estado en el servidor
+  turnoId=null;
   if(window.location.protocol!=='file:'){
-    fetch('/api/reset',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}).catch(function(){});
+    fetch('/api/reset',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({turnoId:null})
+    }).catch(function(){});
   }
   var tv=salesLog.reduce(function(a,s){return a+s.total;},0);
   historialTurnos.unshift({
@@ -1751,6 +1769,8 @@ window.addEventListener('DOMContentLoaded', function(){
 // ============================================================
 var ultimoDomNum = 0;
 var pollingActivo = false;
+var turnoId = null;
+var dispositivoId = 'pos_' + Math.random().toString(36).substr(2,8);
 
 function initRed(){
   if(pollingActivo) return;
@@ -1761,6 +1781,24 @@ function initRed(){
 }
 
 function pollServidor(){
+  // Registrar presencia del dispositivo
+  if(turnoActivo){
+    fetch(window.location.origin+'/api/ping',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        id:dispositivoId,
+        nombre:'POS - '+(turnoActivo?turnoActivo.empleados.map(function(e){return e.nombre;}).join(', '):''),
+        rol:'pos',
+        hora:getNow()
+      })
+    })
+    .then(function(r){return r.json();})
+    .then(function(data){
+      if(data.sesiones) renderSesiones(data.sesiones);
+    })
+    .catch(function(){});
+  }
   fetch(window.location.origin+'/api/estado')
     .then(function(r){ return r.json(); })
     .then(function(data){
@@ -1774,7 +1812,7 @@ function pollServidor(){
       }
       ultimoDomNum = nuevoNum;
       // Solo procesar domicilios si hay turno activo
-      if(turnoActivo && d.domicilios && d.domicilios.length){
+      if(turnoActivo && turnoId && d.domicilios && d.domicilios.length){
         var huboNuevo=false;
         d.domicilios.forEach(function(dom){
           var existe=domicilios.find(function(x){return x.id===dom.id;});

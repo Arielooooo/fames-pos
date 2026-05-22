@@ -99,7 +99,15 @@ function setRedDot(ok){
   el.style.borderColor=ok?'var(--verde)':'var(--rojo)';
 }
 
+var repId = 'rep_' + Math.random().toString(36).substr(2,8);
+
 function pollServidor(){
+  // Registrar presencia del repartidor
+  fetch(window.location.origin+'/api/ping',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({id:repId,nombre:'🛵 Repartidor',rol:'repartidor',hora:new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})})
+  }).catch(function(){});
   fetch(window.location.origin+'/api/estado')
     .then(function(r){return r.json();})
     .then(function(data){
