@@ -338,7 +338,10 @@ header{background:var(--gris-oscuro);border-bottom:1px solid var(--gris-borde);p
 <div class="full-tab" id="tab-cocina">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:11px;">
     <div class="sec-title" style="margin:0;">🍳 Comandas activas</div>
-    <button class="btn-add" id="btn-ref-cocina">↻ Actualizar</button>
+    <div style="display:flex;gap:7px;">
+      <button class="btn-add" id="btn-ref-cocina">↻ Actualizar</button>
+      <button class="btn-add" id="btn-limpiar-cocina" style="border-color:var(--rojo);color:var(--rojo);">✕ Limpiar todo</button>
+    </div>
   </div>
   <div class="cocina-grid" id="cocina-grid"></div>
 </div>
@@ -810,6 +813,11 @@ function abrirTurno(){
   if(splash)splash.style.display='none';
   if(app)app.style.display='flex';
   set('turno-badge',fecha+' · '+hora+' · '+empleados.map(function(e){return e.nombre;}).join(', '));
+  // Limpiar estado del servidor al abrir turno nuevo
+  if(window.location.protocol!=='file:'){
+    fetch('/api/reset',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}).catch(function(){});
+  }
+  ultimoDomNum=0;
   initApp();
 }
 
@@ -1047,6 +1055,7 @@ function renderCocina(){
           +'</div>';
       }).join('')
       +'<button class="btn-cobrar-com" data-cid="'+c.id+'"'+(todosListos?'':' style="opacity:.5;"')+'>COBRAR '+c.mesa+'</button>'
+      +'<button class="btn-cancelar-com" data-cid="'+c.id+'" style="width:100%;margin-top:4px;padding:5px;border-radius:7px;border:1px solid var(--gris-borde);background:transparent;color:var(--gris-texto);font-size:11px;cursor:pointer;">✕ Cancelar comanda</button>'
       +'</div>';
   }).join('');
   el.querySelectorAll('.btn-listo').forEach(function(btn){
@@ -1059,6 +1068,29 @@ function renderCocina(){
   el.querySelectorAll('.btn-cobrar-com').forEach(function(btn){
     btn.addEventListener('click',function(){cobrarComanda(parseInt(this.getAttribute('data-cid')));});
   });
+  el.querySelectorAll('.btn-cancelar-com').forEach(function(btn){
+    btn.addEventListener('click',function(){cancelarComanda(parseInt(this.getAttribute('data-cid')));});
+  });
+}
+
+
+function cancelarComanda(cid){
+  if(!confirm('¿Cancelar esta comanda?'))return;
+  var idx=cocina.findIndex(function(c){return c.id===cid;});
+  if(idx>=0){
+    var com=cocina[idx];
+    cocina.splice(idx,1);
+    // Si era domicilio, también quitar de domicilios
+    if(com.esDom){
+      domicilios=domicilios.filter(function(d){return d.label!==com.mesa;});
+    }
+    // Limpiar mesa si estaba en pedido
+    if(orders[com.mesa]) orders[com.mesa]={};
+    updateCbadge();
+    renderCocina();
+    renderMesaTabs();
+    showToast('Comanda #'+cid+' cancelada','warn');
+  }
 }
 
 function cobrarComanda(cid){
@@ -1401,6 +1433,10 @@ function exportarCSV(){
 
 function cerrarTurno(){
   if(!confirm('¿Cerrar el turno? Se guardará en el historial.'))return;
+  // Limpiar estado en el servidor
+  if(window.location.protocol!=='file:'){
+    fetch('/api/reset',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}).catch(function(){});
+  }
   var tv=salesLog.reduce(function(a,s){return a+s.total;},0);
   historialTurnos.unshift({
     fecha:turnoActivo?turnoActivo.fecha:getHoy(),
@@ -1414,6 +1450,7 @@ function cerrarTurno(){
   });
   salesLog=[];salesByProduct={};cobroNum=0;comNum=0;domNum=0;gastoNum=0;
   orders={};cocina=[];domicilios=[];gastos=[];turnoActivo=null;empleados=[];
+  ultimoDomNum=0;
   INV.forEach(function(i){i.ap=i.stock;});
   invDesbloqueado=false;
   var app=document.getElementById('app'),splash=document.getElementById('splash');
@@ -1626,6 +1663,16 @@ window.addEventListener('DOMContentLoaded', function(){
 
   // COCINA
   document.getElementById('btn-ref-cocina').addEventListener('click', renderCocina);
+  document.getElementById('btn-limpiar-cocina').addEventListener('click', function(){
+    if(!confirm('¿Limpiar TODAS las comandas activas? Esto no cobra ni descuenta inventario.'))return;
+    cocina=[];domicilios=[];
+    updateCbadge();renderCocina();renderMesaTabs();
+    // Limpiar también en servidor
+    if(window.location.protocol!=='file:'){
+      fetch('/api/reset',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}).catch(function(){});
+    }
+    showToast('Comandas limpiadas','ok');
+  });
 
   // HEADER
   document.getElementById('btn-qr').addEventListener('click', mostrarQR);
@@ -1726,28 +1773,28 @@ function pollServidor(){
         showToast('🛵 Nuevo pedido online!','ok');
       }
       ultimoDomNum = nuevoNum;
-      // Aplicar domicilios nuevos del servidor
-      if(d.domicilios && d.domicilios.length){
+      // Solo procesar domicilios si hay turno activo
+      if(turnoActivo && d.domicilios && d.domicilios.length){
+        var huboNuevo=false;
         d.domicilios.forEach(function(dom){
-          var existe = domicilios.find(function(x){ return x.id===dom.id; });
+          var existe=domicilios.find(function(x){return x.id===dom.id;});
           if(!existe){
-            domicilios.push(dom);
-            // Agregar a cocina si no existe
-            var enCoc = cocina.find(function(c){ return c.mesa===dom.label; });
+            domicilios.push(dom);huboNuevo=true;
+            var enCoc=cocina.find(function(c){return c.mesa===dom.label;});
             if(!enCoc){
               comNum++;
-              var cItems = dom.items.map(function(it){
-                return {id:it.id,item:{name:it.name,price:it.price},qty:it.qty,listo:false};
-              });
+              var cItems=dom.items.map(function(it){return{id:it.id,item:{name:it.name,price:it.price},qty:it.qty,listo:false};});
               cocina.push({id:comNum,mesa:dom.label,hora:dom.hora,timestamp:Date.now(),items:cItems,cobrado:false,esDom:true});
               updateCbadge();
             }
           }
         });
-        var tc=document.getElementById('tab-domicilios');
-        if(tc&&tc.style.display!=='none') try{renderDomicilios();}catch(e){}
-        var tco=document.getElementById('tab-cocina');
-        if(tco&&tco.style.display!=='none') try{renderCocina();}catch(e){}
+        if(huboNuevo){
+          var tc=document.getElementById('tab-domicilios');
+          if(tc&&tc.style.display!=='none')try{renderDomicilios();}catch(e){}
+          var tco=document.getElementById('tab-cocina');
+          if(tco&&tco.style.display!=='none')try{renderCocina();}catch(e){}
+        }
       }
       mostrarEstadoRed(true);
     })
