@@ -2,27 +2,54 @@ const http = require('http');
 const fs   = require('fs');
 const path = require('path');
 
-const PORT = process.env.PORT || 3000;
+const PORT      = process.env.PORT || 3000;
+const DATA_FILE = path.join(__dirname, 'estado.json');
 
-// ── Estado global ────────────────────────────────────────────────
-let turno = {
-  id:          null,
-  abierto:     false,
-  domicilios:  [],
-  domNum:      0,
-  // Estado completo del POS
-  salesLog:       [],
-  salesByProduct: {},
-  cobroNum:       0,
-  comNum:         0,
-  cocina:         [],
-  orders:         {},
-  gastos:         [],
-  gastoNum:       0
-};
+// ── Cargar estado desde disco ────────────────────────────────────
+function cargarEstado() {
+  try {
+    if (fs.existsSync(DATA_FILE)) {
+      const raw = fs.readFileSync(DATA_FILE, 'utf8');
+      return JSON.parse(raw);
+    }
+  } catch(e) {
+    console.log('Error cargando estado:', e.message);
+  }
+  return estadoDefault();
+}
 
-// Empleados: { id: { nombre, rol, entrada, salida, activo, ultima } }
-let empleados = {};
+function estadoDefault() {
+  return {
+    turno: {
+      id:          null,
+      abierto:     false,
+      domicilios:  [],
+      domNum:      0,
+      salesLog:    [],
+      salesByProduct: {},
+      cobroNum:    0,
+      comNum:      0,
+      cocina:      [],
+      orders:      {},
+      gastos:      [],
+      gastoNum:    0
+    },
+    empleados: {}
+  };
+}
+
+// ── Guardar estado en disco ──────────────────────────────────────
+function guardarEstado() {
+  try {
+    fs.writeFileSync(DATA_FILE, JSON.stringify({ turno, empleados }), 'utf8');
+  } catch(e) {
+    console.error('Error guardando estado:', e.message);
+  }
+}
+
+// ── Inicializar ──────────────────────────────────────────────────
+let { turno, empleados } = cargarEstado();
+console.log('Estado cargado: ' + turno.salesLog.length + ' ventas, turno=' + turno.id);
 
 // ── Helpers ──────────────────────────────────────────────────────
 function cors(res) {
@@ -58,9 +85,32 @@ function limpiarInactivos() {
     if (e.activo && ahora - e.ultima > 20000) {
       e.activo  = false;
       e.salida  = e.ultimaHora || hora();
-      console.log('⬤ Desconectado:', e.nombre, 'a las', e.salida);
+      console.log('Desconectado:', e.nombre);
     }
   });
+}
+
+function estadoCompleto() {
+  limpiarInactivos();
+  return {
+    ok:             true,
+    turno: {
+      id:      turno.id,
+      abierto: turno.abierto,
+      fecha:   turno.id || hoy(),
+      domNum:  turno.domNum
+    },
+    empleados:      empleados,
+    domicilios:     turno.domicilios,
+    salesLog:       turno.salesLog,
+    salesByProduct: turno.salesByProduct,
+    cobroNum:       turno.cobroNum,
+    comNum:         turno.comNum,
+    cocina:         turno.cocina,
+    orders:         turno.orders,
+    gastos:         turno.gastos,
+    gastoNum:       turno.gastoNum
+  };
 }
 
 const ARCHIVOS = {
@@ -78,7 +128,7 @@ const server = http.createServer((req, res) => {
 
   if (method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
 
-  // ── Archivos HTML ─────────────────────────────────────────────
+  // Archivos HTML
   if (ARCHIVOS[url] && method === 'GET') {
     fs.readFile(path.join(__dirname, ARCHIVOS[url]), (err, data) => {
       if (err) { cors(res); res.writeHead(404); res.end('No encontrado'); return; }
@@ -89,65 +139,55 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // ── GET /api/turno — estado del turno + empleados ─────────────
+  // GET /api/turno — estado completo
   if (url === '/api/turno' && method === 'GET') {
-    limpiarInactivos();
-    json(res, 200, {
-      ok: true,
-      turno: {
-        id:      turno.id,
-        abierto: turno.abierto,
-        fecha:   turno.id || hoy(),
-        domNum:  turno.domNum
-      },
-      empleados:      empleados,
-      domicilios:     turno.domicilios,
-      salesLog:       turno.salesLog,
-      salesByProduct: turno.salesByProduct,
-      cobroNum:       turno.cobroNum,
-      comNum:         turno.comNum,
-      cocina:         turno.cocina,
-      orders:         turno.orders,
-      gastos:         turno.gastos,
-      gastoNum:       turno.gastoNum
-    });
+    json(res, 200, estadoCompleto());
     return;
   }
 
-  // ── POST /api/login — empleado entra al turno ─────────────────
+  // GET /api/estado — compatibilidad
+  if (url === '/api/estado' && method === 'GET') {
+    json(res, 200, { ok: true, data: { domicilios: turno.domicilios, domNum: turno.domNum } });
+    return;
+  }
+
+  // POST /api/login
   if (url === '/api/login' && method === 'POST') {
     body(req, b => {
       try {
         const d = JSON.parse(b);
         if (!d.nombre) { json(res, 400, { ok: false, error: 'Nombre requerido' }); return; }
-        const id = 'emp_' + d.nombre.toLowerCase().replace(/\s+/g,'_') + '_' + (d.id||'');
+        const id = 'emp_' + d.nombre.toLowerCase().replace(/[^a-z0-9]/g,'_') + '_' + (d.id||'x');
         const yaExiste = empleados[id];
         empleados[id] = {
-          id:       id,
-          nombre:   d.nombre,
-          rol:      d.rol || 'empleado',
-          entrada:  yaExiste && yaExiste.entrada ? yaExiste.entrada : hora(),
-          salida:   null,
-          activo:   true,
-          ultima:   Date.now(),
-          ultimaHora: hora()
+          id:        id,
+          nombre:    d.nombre,
+          rol:       d.rol || 'empleado',
+          entrada:   yaExiste && yaExiste.entrada ? yaExiste.entrada : hora(),
+          salida:    null,
+          activo:    true,
+          ultima:    Date.now(),
+          ultimaHora:hora()
         };
-        // Si no hay turno abierto hoy, abrirlo
         if (!turno.abierto || turno.id !== hoy()) {
-          turno.id       = hoy();
-          turno.abierto  = true;
-          turno.domicilios = [];
-          turno.domNum   = 0;
-          console.log('📅 Turno abierto:', turno.id);
+          if (!turno.abierto) {
+            // Nuevo turno — limpiar solo si es día diferente
+            if (turno.id && turno.id !== hoy()) {
+              turno = estadoDefault().turno;
+            }
+            turno.id      = hoy();
+            turno.abierto = true;
+            console.log('Turno abierto:', turno.id);
+          }
         }
-        console.log('✅ Conectado:', d.nombre, '|', d.rol);
-        limpiarInactivos();
+        guardarEstado();
         json(res, 200, {
           ok:        true,
           empId:     id,
           turno:     { id: turno.id, abierto: turno.abierto, fecha: turno.id },
           empleados: empleados
         });
+        console.log('Login:', d.nombre, '|', d.rol);
       } catch(e) {
         json(res, 500, { ok: false, error: e.message });
       }
@@ -155,16 +195,16 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // ── POST /api/ping — keepalive del empleado ───────────────────
+  // POST /api/ping
   if (url === '/api/ping' && method === 'POST') {
     body(req, b => {
       try {
         const d = JSON.parse(b || '{}');
         if (d.empId && empleados[d.empId]) {
-          empleados[d.empId].activo     = true;
-          empleados[d.empId].ultima     = Date.now();
-          empleados[d.empId].ultimaHora = hora();
-          empleados[d.empId].salida     = null;
+          empleados[d.empId].activo      = true;
+          empleados[d.empId].ultima      = Date.now();
+          empleados[d.empId].ultimaHora  = hora();
+          empleados[d.empId].salida      = null;
         }
         limpiarInactivos();
         json(res, 200, { ok: true, empleados: empleados });
@@ -175,7 +215,7 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // ── POST /api/logout — empleado cierra sesión ─────────────────
+  // POST /api/logout
   if (url === '/api/logout' && method === 'POST') {
     body(req, b => {
       try {
@@ -183,7 +223,8 @@ const server = http.createServer((req, res) => {
         if (d.empId && empleados[d.empId]) {
           empleados[d.empId].activo = false;
           empleados[d.empId].salida = hora();
-          console.log('👋 Desconectado:', empleados[d.empId].nombre);
+          guardarEstado();
+          console.log('Logout:', empleados[d.empId].nombre);
         }
         json(res, 200, { ok: true });
       } catch(e) {
@@ -193,7 +234,39 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // ── POST /api/pedido-online — cliente hace pedido ─────────────
+  // POST /api/sync — guardar estado completo del POS
+  if (url === '/api/sync' && method === 'POST') {
+    body(req, b => {
+      try {
+        const d = JSON.parse(b || '{}');
+        if (!turno.abierto) { turno.abierto = true; turno.id = turno.id || hoy(); }
+        if (d.domicilios && Array.isArray(d.domicilios)) {
+          d.domicilios.forEach(dom => {
+            const idx = turno.domicilios.findIndex(x => x.id === dom.id);
+            if (idx >= 0) turno.domicilios[idx].estado = dom.estado;
+            else if (dom.id) turno.domicilios.push(dom);
+          });
+        }
+        if (d.salesLog       !== undefined) turno.salesLog       = d.salesLog;
+        if (d.salesByProduct !== undefined) turno.salesByProduct = d.salesByProduct;
+        if (d.cobroNum       !== undefined) turno.cobroNum       = d.cobroNum;
+        if (d.comNum         !== undefined) turno.comNum         = d.comNum;
+        if (d.cocina         !== undefined) turno.cocina         = d.cocina;
+        if (d.orders         !== undefined) turno.orders         = d.orders;
+        if (d.gastos         !== undefined) turno.gastos         = d.gastos;
+        if (d.gastoNum       !== undefined) turno.gastoNum       = d.gastoNum;
+        guardarEstado();
+        console.log('Sync OK: ' + turno.salesLog.length + ' ventas');
+        json(res, 200, { ok: true });
+      } catch(e) {
+        console.error('Sync error:', e.message);
+        json(res, 500, { ok: false, error: e.message });
+      }
+    });
+    return;
+  }
+
+  // POST /api/pedido-online
   if (url === '/api/pedido-online' && method === 'POST') {
     body(req, b => {
       try {
@@ -208,86 +281,32 @@ const server = http.createServer((req, res) => {
         pedido.origen = 'online';
         pedido.turnoId = turno.id;
         turno.domicilios.push(pedido);
-        console.log('🛵 Pedido:', pedido.label, pedido.nombre, '$'+pedido.total);
+        guardarEstado();
+        console.log('Pedido online:', pedido.label, pedido.nombre, '$'+pedido.total);
         json(res, 200, { ok: true, id: pedido.label });
       } catch(e) {
-        console.error('Error pedido:', e.message);
         json(res, 500, { ok: false, error: e.message });
       }
     });
     return;
   }
 
-  // ── POST /api/sync — sincronizar estado completo del POS ──────
-  if (url === '/api/sync' && method === 'POST') {
-    body(req, b => {
-      try {
-        const d = JSON.parse(b || '{}');
-        // Asegurar que el turno está abierto
-        if (!turno.abierto) {
-          turno.abierto = true;
-          turno.id = turno.id || hoy();
-        }
-        // Sincronizar domicilios
-        if (d.domicilios && Array.isArray(d.domicilios)) {
-          d.domicilios.forEach(dom => {
-            const idx = turno.domicilios.findIndex(x => x.id === dom.id);
-            if (idx >= 0) turno.domicilios[idx].estado = dom.estado;
-            else if (dom.id) turno.domicilios.push(dom);
-          });
-        }
-        // Guardar estado — solo si tiene datos reales
-        if (d.salesLog    !== undefined) turno.salesLog       = d.salesLog;
-        if (d.salesByProduct !== undefined) turno.salesByProduct = d.salesByProduct;
-        if (d.cobroNum    !== undefined) turno.cobroNum       = d.cobroNum;
-        if (d.comNum      !== undefined) turno.comNum         = d.comNum;
-        if (d.cocina      !== undefined) turno.cocina         = d.cocina;
-        if (d.orders      !== undefined) turno.orders         = d.orders;
-        if (d.gastos      !== undefined) turno.gastos         = d.gastos;
-        if (d.gastoNum    !== undefined) turno.gastoNum       = d.gastoNum;
-        console.log('Sync: '+turno.salesLog.length+' ventas, $'+
-          turno.salesLog.reduce(function(a,s){return a+(s.total||0);},0).toFixed(2));
-        json(res, 200, { ok: true });
-      } catch(e) {
-        console.error('Sync error:', e.message);
-        json(res, 500, { ok: false, error: e.message });
-      }
-    });
-    return;
-  }
-
-  // ── POST /api/reset — limpiar domicilios al cerrar turno ──────
+  // POST /api/reset — cierre de turno
   if (url === '/api/reset' && method === 'POST') {
     body(req, b => {
-      turno.domicilios    = [];
-      turno.domNum        = 0;
-      turno.salesLog      = [];
-      turno.salesByProduct= {};
-      turno.cobroNum      = 0;
-      turno.comNum        = 0;
-      turno.cocina        = [];
-      turno.orders        = {};
-      turno.gastos        = [];
-      turno.gastoNum      = 0;
-      turno.id            = hoy();
-      turno.abierto       = false;
-      console.log('🔄 Turno reseteado completamente');
+      turno = estadoDefault().turno;
+      turno.id = hoy();
+      guardarEstado();
+      console.log('Turno reseteado');
       json(res, 200, { ok: true, turnoId: turno.id });
     });
-    return;
-  }
-
-  // ── GET /api/estado — compatibilidad ─────────────────────────
-  if (url === '/api/estado' && method === 'GET') {
-    limpiarInactivos();
-    json(res, 200, { ok: true, data: { domicilios: turno.domicilios, domNum: turno.domNum } });
     return;
   }
 
   json(res, 404, { ok: false, error: 'Ruta no encontrada: ' + url });
 });
 
-server.on('error', e => console.error('Server error:', e.message));
+server.on('error', e => console.error('Error:', e.message));
 server.listen(PORT, '0.0.0.0', () => {
-  console.log('🍔 FAMES POS en puerto ' + PORT);
+  console.log('FAMES POS en puerto ' + PORT);
 });

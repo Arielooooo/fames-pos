@@ -1198,7 +1198,10 @@ function enviarCocina(){
   comNum++;var hora=getNow();
   var items=keys.map(function(id){return{id:id,item:o[id].item,qty:o[id].qty,listo:false,specs:o[id].specs||[]};});
   cocina.push({id:comNum,mesa:currentTable,hora:hora,timestamp:Date.now(),items:items,cobrado:false});
-  updateCbadge();sonarCocina();syncEstado();showToast('📋 Comanda #'+comNum+' enviada','ok');
+  updateCbadge();
+  sonarCocina();
+  syncEstado();
+  showToast('📋 Comanda #'+comNum+' enviada a cocina','ok');
 }
 
 function updateCbadge(){
@@ -1241,7 +1244,7 @@ function renderCocina(){
     btn.addEventListener('click',function(){
       var cid=parseInt(this.getAttribute('data-cid')),idx=parseInt(this.getAttribute('data-idx'));
       var com=cocina.find(function(c){return c.id===cid;});
-      if(com){com.items[idx].listo=!com.items[idx].listo;renderCocina();}
+      if(com){com.items[idx].listo=!com.items[idx].listo;renderCocina();syncEstado();}
     });
   });
   el.querySelectorAll('.btn-cobrar-com').forEach(function(btn){
@@ -2033,7 +2036,7 @@ var syncInterval = null;
 
 function iniciarSyncAuto(){
   if(syncInterval) clearInterval(syncInterval);
-  syncInterval = setInterval(syncEstado, 15000);
+  syncInterval = setInterval(syncEstado, 5000);
 }
 
 function syncEstado(){
@@ -2232,25 +2235,80 @@ function initRed(){
   pollingActivo = true;
   mostrarEstadoRed(true);
   pollServidor();
-  setInterval(pollServidor, 4000);
+  setInterval(pollServidor, 3000);
 }
 
 function pollServidor(){
+  if(!turnoActivo) return;
   fetch(window.location.origin+'/api/turno')
     .then(function(r){ return r.json(); })
     .then(function(data){
       if(!data.ok) return;
-      var d = data;
       // Actualizar equipo
-      if(d.empleados) renderEquipoApp(d.empleados);
+      if(data.empleados) renderEquipoApp(data.empleados);
       // Detectar pedido online nuevo
-      var nuevoNum = d.turno ? d.turno.domNum||0 : 0;
+      var nuevoNum = data.turno ? data.turno.domNum||0 : 0;
       if(nuevoNum > ultimoDomNum && ultimoDomNum > 0){
         sonarOnline();
         showToast('🛵 ¡Nuevo pedido online!','ok');
       }
       ultimoDomNum = nuevoNum;
-      var d = d.turno||{};
+
+      // ── Aplicar estado del servidor al local ──────────────────
+      if(!turnoActivo) return;
+      var huboComandaNueva = false;
+
+      // Sincronizar cocina — agregar comandas nuevas del servidor
+      if(data.cocina && data.cocina.length){
+        data.cocina.forEach(function(comServ){
+          var existe = cocina.find(function(c){ return c.id === comServ.id; });
+          if(!existe){
+            cocina.push(comServ);
+            huboComandaNueva = true;
+            updateCbadge();
+          } else {
+            // Actualizar estado listo de items
+            comServ.items.forEach(function(itServ, idx){
+              if(existe.items[idx] && itServ.listo && !existe.items[idx].listo){
+                existe.items[idx].listo = true;
+              }
+            });
+            // Si se cobró en otro dispositivo
+            if(comServ.cobrado && !existe.cobrado){
+              existe.cobrado = true;
+              updateCbadge();
+            }
+          }
+        });
+      }
+
+      // Sincronizar ventas
+      if(data.salesLog && data.salesLog.length > salesLog.length){
+        salesLog = data.salesLog;
+        salesByProduct = data.salesByProduct || salesByProduct;
+        cobroNum = data.cobroNum || cobroNum;
+      }
+
+      // Sincronizar orders (pedidos por mesa)
+      if(data.orders){
+        Object.keys(data.orders).forEach(function(mesa){
+          if(!orders[mesa] || !Object.keys(orders[mesa]).length){
+            orders[mesa] = data.orders[mesa];
+          }
+        });
+      }
+
+      // Notificar si llegó comanda nueva
+      if(huboComandaNueva){
+        var tcoc = document.getElementById('tab-cocina');
+        if(tcoc && tcoc.style.display !== 'none') renderCocina();
+        updateCbadge();
+        sonarCocina();
+        showToast('📋 Nueva comanda recibida','ok');
+      }
+
+      // Sincronizar domicilios
+      var d = {};
       d.domicilios = data.domicilios||[];
       // Solo procesar domicilios si hay turno activo
       if(turnoActivo && turnoId && d.domicilios && d.domicilios.length){
