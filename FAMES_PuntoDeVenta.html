@@ -315,6 +315,7 @@ header{background:var(--gris-oscuro);border-bottom:1px solid var(--gris-borde);p
   <div class="tab" data-tab="cierre">🔒 Cierre</div>
   <div class="tab" data-tab="historial">📋 Historial</div>
   <div class="tab admin-only" data-tab="equipo" style="display:none;">👥 Equipo</div>
+  <div class="tab admin-only" data-tab="admin" style="display:none;">⚙️ Admin</div>
 </div>
 
 <!-- PEDIDO -->
@@ -504,6 +505,33 @@ header{background:var(--gris-oscuro);border-bottom:1px solid var(--gris-borde);p
   <!-- Lista de empleados -->
   <div class="sec-title" style="margin-bottom:10px;">Registro de entradas y salidas</div>
   <div id="equipo-lista-admin" style="max-width:700px;"></div>
+</div>
+
+
+<!-- ADMIN -->
+<div class="full-tab" id="tab-admin">
+  <div class="sec-title" style="margin-bottom:14px;">⚙️ Panel de administrador</div>
+
+  <!-- CANCELAR COBROS -->
+  <div style="background:var(--gris-panel);border:1px solid var(--gris-borde);border-radius:10px;padding:14px;margin-bottom:14px;max-width:780px;">
+    <div class="sec-title" style="margin:0 0 10px;border:none;color:var(--rojo);">🧾 Cancelar cobros del turno</div>
+    <p style="font-size:12px;color:var(--gris-texto);margin-bottom:10px;">Al cancelar un cobro se resta del total de ventas, propinas y estadísticas del turno.</p>
+    <div id="admin-cobros-lista"></div>
+  </div>
+
+  <!-- CANCELAR COMANDAS -->
+  <div style="background:var(--gris-panel);border:1px solid var(--gris-borde);border-radius:10px;padding:14px;margin-bottom:14px;max-width:780px;">
+    <div class="sec-title" style="margin:0 0 10px;border:none;color:var(--rojo);">🍳 Cancelar comandas activas</div>
+    <p style="font-size:12px;color:var(--gris-texto);margin-bottom:10px;">Elimina la comanda de cocina sin cobrar. No afecta las ventas.</p>
+    <div id="admin-comandas-lista"></div>
+  </div>
+
+  <!-- CANCELAR DOMICILIOS -->
+  <div style="background:var(--gris-panel);border:1px solid var(--gris-borde);border-radius:10px;padding:14px;max-width:780px;">
+    <div class="sec-title" style="margin:0 0 10px;border:none;color:var(--rojo);">🛵 Cancelar domicilios</div>
+    <p style="font-size:12px;color:var(--gris-texto);margin-bottom:10px;">Cancela un pedido a domicilio pendiente o en camino.</p>
+    <div id="admin-dom-lista"></div>
+  </div>
 </div>
 
 </div><!-- /app -->
@@ -1905,7 +1933,7 @@ function cerrarModal(id){var m=document.getElementById(id);if(m)m.classList.remo
 // ============================================================
 function showTab(tab){
   if(tab==='inventario'&&!invDesbloqueado){mostrarInventario();return;}
-  var TABS=['pedido','cocina','mesas','domicilios','inventario','caja','reporte','stats','cierre','historial','equipo'];
+  var TABS=['pedido','cocina','mesas','domicilios','inventario','caja','reporte','stats','cierre','historial','equipo','admin'];
   TABS.forEach(function(t){var el=document.getElementById('tab-'+t);if(el)el.style.display='none';});
   document.querySelectorAll('.tab').forEach(function(el){el.classList.toggle('active',el.getAttribute('data-tab')===tab);});
   var active=document.getElementById('tab-'+tab);
@@ -1920,6 +1948,7 @@ function showTab(tab){
   if(tab==='cierre')renderCierre();
   if(tab==='historial')renderHistorial();
   if(tab==='equipo'){cargarEquipoAdmin();}
+  if(tab==='admin'){renderAdmin();}
 }
 
 
@@ -2033,7 +2062,6 @@ function cargarEquipoAdmin(){
 }
 
 function mostrarTabEquipo(){
-  // Solo mostrar si es admin
   if(miRol==='admin'){
     document.querySelectorAll('.admin-only').forEach(function(el){ el.style.display=''; });
   }
@@ -2204,6 +2232,127 @@ function confirmarCustom(){
   sonarProducto();
   showToast('+ '+_customItem.name+(specStr?' ('+specStr+')':''),'ok');
   _customItem = null;
+}
+
+
+// ===== PANEL ADMIN =====
+function renderAdmin(){
+  renderAdminCobros();
+  renderAdminComandas();
+  renderAdminDomicilios();
+}
+
+function renderAdminCobros(){
+  var el=document.getElementById('admin-cobros-lista');
+  if(!el)return;
+  if(!salesLog.length){el.innerHTML='<p style="font-size:12px;color:var(--gris-texto);">Sin cobros en este turno.</p>';return;}
+  var PI={efectivo:'💵',transferencia:'📲',tarjeta:'💳'};
+  el.innerHTML=salesLog.slice().reverse().map(function(s,i){
+    var realIdx=salesLog.length-1-i;
+    var itemsStr=s.items.map(function(it){return it.qty+'x '+(it.name||'');}).join(', ');
+    return '<div class="admin-row">'
+      +'<span class="admin-row-num">#'+s.num+'</span>'
+      +'<div class="admin-row-info">'
+      +'<div>'+esc(s.table)+' · '+s.hora+' · '+(PI[s.pago]||'💵')+'</div>'
+      +'<div style="font-size:10px;color:var(--gris-texto);">'+esc(itemsStr)+'</div>'
+      +'</div>'
+      +'<span class="admin-row-total">$'+s.total.toFixed(2)+'</span>'
+      +'<button class="btn-admin-cancel" data-cobro-idx="'+realIdx+'">✕ Cancelar</button>'
+      +'</div>';
+  }).join('')||'<p style="font-size:12px;color:var(--gris-texto);">Sin cobros.</p>';
+  el.querySelectorAll('[data-cobro-idx]').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      var idx=parseInt(this.getAttribute('data-cobro-idx'));
+      cancelarCobro(idx);
+    });
+  });
+}
+
+function cancelarCobro(idx){
+  var cobro=salesLog[idx];
+  if(!cobro)return;
+  if(!confirm('¿Cancelar cobro #'+cobro.num+' de $'+cobro.total.toFixed(2)+'?\nEsto restará las ventas del turno.'))return;
+  // Restar del salesByProduct
+  cobro.items.forEach(function(it){
+    if(it.id&&salesByProduct[it.id]){
+      salesByProduct[it.id]=Math.max(0,(salesByProduct[it.id]||0)-it.qty);
+      if(salesByProduct[it.id]===0) delete salesByProduct[it.id];
+    }
+    // Devolver ingredientes al inventario
+    var rec=RECETAS[it.id];
+    if(rec) rec.forEach(function(r){
+      var invIdx=INV.findIndex(function(i){return i.name===r.inv;});
+      if(invIdx>=0) INV[invIdx].stock=Math.round((INV[invIdx].stock+r.qty*it.qty)*100)/100;
+    });
+  });
+  // Quitar del salesLog
+  salesLog.splice(idx,1);
+  syncEstado();
+  renderAdmin();
+  showToast('Cobro #'+cobro.num+' cancelado','ok');
+}
+
+function renderAdminComandas(){
+  var el=document.getElementById('admin-comandas-lista');
+  if(!el)return;
+  var activas=cocina.filter(function(c){return !c.cobrado;});
+  if(!activas.length){el.innerHTML='<p style="font-size:12px;color:var(--gris-texto);">Sin comandas activas.</p>';return;}
+  el.innerHTML=activas.map(function(c){
+    var itemsStr=c.items.map(function(it){return it.qty+'x '+it.item.name;}).join(', ');
+    return '<div class="admin-row">'
+      +'<span class="admin-row-num">#'+c.id+'</span>'
+      +'<div class="admin-row-info">'
+      +'<div>'+esc(c.mesa)+' · '+c.hora+'</div>'
+      +'<div style="font-size:10px;color:var(--gris-texto);">'+esc(itemsStr)+'</div>'
+      +'</div>'
+      +'<button class="btn-admin-cancel" data-com-id="'+c.id+'">✕ Cancelar</button>'
+      +'</div>';
+  }).join('');
+  el.querySelectorAll('[data-com-id]').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      var cid=parseInt(this.getAttribute('data-com-id'));
+      cancelarComanda(cid,true);
+    });
+  });
+}
+
+function renderAdminDomicilios(){
+  var el=document.getElementById('admin-dom-lista');
+  if(!el)return;
+  var pendientes=domicilios.filter(function(d){return d.estado!=='entregado';});
+  if(!pendientes.length){el.innerHTML='<p style="font-size:12px;color:var(--gris-texto);">Sin domicilios pendientes.</p>';return;}
+  var PI={efectivo:'💵',transferencia:'📲',tarjeta:'💳'};
+  el.innerHTML=pendientes.map(function(d){
+    return '<div class="admin-row">'
+      +'<span class="admin-row-num">'+esc(d.label)+'</span>'
+      +'<div class="admin-row-info">'
+      +'<div>'+esc(d.nombre)+' · '+PI[d.pago]+'</div>'
+      +'<div style="font-size:10px;color:var(--gris-texto);">'+esc(d.dir)+'</div>'
+      +'</div>'
+      +'<span class="admin-row-total">$'+Number(d.total).toFixed(2)+'</span>'
+      +'<button class="btn-admin-cancel" data-dom-id="'+d.id+'">✕ Cancelar</button>'
+      +'</div>';
+  }).join('');
+  el.querySelectorAll('[data-dom-id]').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      var did=parseInt(this.getAttribute('data-dom-id'));
+      cancelarDomAdmin(did);
+    });
+  });
+}
+
+function cancelarDomAdmin(id){
+  var dom=domicilios.find(function(d){return d.id===id;});
+  if(!dom)return;
+  if(!confirm('¿Cancelar domicilio '+dom.label+' de '+dom.nombre+'?'))return;
+  // Quitar de cocina si existe
+  cocina=cocina.filter(function(c){return c.mesa!==dom.label;});
+  // Quitar de domicilios
+  domicilios=domicilios.filter(function(d){return d.id!==id;});
+  updateCbadge();
+  syncEstado();
+  renderAdmin();
+  showToast(dom.label+' cancelado','ok');
 }
 
 // ===== SYNC AUTOMÁTICO CON SERVIDOR =====
