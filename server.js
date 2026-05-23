@@ -34,21 +34,23 @@ function estadoDefault() {
       gastos:      [],
       gastoNum:    0
     },
-    empleados: {}
+    empleados: {},
+    historialTurnos: []
   };
 }
 
 // ── Guardar estado en disco ──────────────────────────────────────
 function guardarEstado() {
   try {
-    fs.writeFileSync(DATA_FILE, JSON.stringify({ turno, empleados }), 'utf8');
+    fs.writeFileSync(DATA_FILE, JSON.stringify({ turno, empleados, historialTurnos }), 'utf8');
   } catch(e) {
     console.error('Error guardando estado:', e.message);
   }
 }
 
 // ── Inicializar ──────────────────────────────────────────────────
-let { turno, empleados } = cargarEstado();
+let { turno, empleados, historialTurnos } = cargarEstado();
+if (!historialTurnos) historialTurnos = [];
 console.log('Estado cargado: ' + turno.salesLog.length + ' ventas, turno=' + turno.id);
 
 // ── Helpers ──────────────────────────────────────────────────────
@@ -109,7 +111,8 @@ function estadoCompleto() {
     cocina:         turno.cocina,
     orders:         turno.orders,
     gastos:         turno.gastos,
-    gastoNum:       turno.gastoNum
+    gastoNum:       turno.gastoNum,
+    historialTurnos: historialTurnos
   };
 }
 
@@ -142,6 +145,12 @@ const server = http.createServer((req, res) => {
   // GET /api/turno — estado completo
   if (url === '/api/turno' && method === 'GET') {
     json(res, 200, estadoCompleto());
+    return;
+  }
+
+  // GET /api/historial — ver historial de turnos
+  if (url === '/api/historial' && method === 'GET') {
+    json(res, 200, { ok: true, historialTurnos: historialTurnos });
     return;
   }
 
@@ -284,6 +293,24 @@ const server = http.createServer((req, res) => {
         guardarEstado();
         console.log('Pedido online:', pedido.label, pedido.nombre, '$'+pedido.total);
         json(res, 200, { ok: true, id: pedido.label });
+      } catch(e) {
+        json(res, 500, { ok: false, error: e.message });
+      }
+    });
+    return;
+  }
+
+  // POST /api/historial — guardar turno cerrado
+  if (url === '/api/historial' && method === 'POST') {
+    body(req, b => {
+      try {
+        const turnoData = JSON.parse(b || '{}');
+        historialTurnos.unshift(turnoData);
+        // Guardar máximo 90 turnos
+        if (historialTurnos.length > 90) historialTurnos = historialTurnos.slice(0, 90);
+        guardarEstado();
+        console.log('Turno guardado en historial:', turnoData.fecha);
+        json(res, 200, { ok: true });
       } catch(e) {
         json(res, 500, { ok: false, error: e.message });
       }

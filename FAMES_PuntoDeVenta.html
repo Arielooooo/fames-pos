@@ -956,6 +956,10 @@ function abrirApp(estadoServidor){
     if(estadoServidor.domicilios&&estadoServidor.domicilios.length)  domicilios     = estadoServidor.domicilios;
     if(estadoServidor.turno&&estadoServidor.turno.domNum)            domNum         = estadoServidor.turno.domNum;
     ultimoDomNum = estadoServidor.turno ? estadoServidor.turno.domNum||0 : 0;
+    // Restaurar historial de turnos
+    if(estadoServidor.historialTurnos&&estadoServidor.historialTurnos.length){
+      historialTurnos = estadoServidor.historialTurnos;
+    }
     console.log('✅ Estado restaurado: '+salesLog.length+' ventas, '+cocina.length+' comandas, $'+
       salesLog.reduce(function(a,s){return a+s.total;},0).toFixed(2)+' total');
   }
@@ -1675,11 +1679,12 @@ function ejecutarCierreSesion(esCierre){
   // Guardar en historial si es admin cerrando turno
   if(esCierre){
     var tv=salesLog.reduce(function(a,s){return a+s.total;},0);
-    historialTurnos.unshift({
+    var turnoGuardar={
       fecha:turnoActivo?turnoActivo.fecha:getHoy(),
       horaApertura:turnoActivo?turnoActivo.hora:'',
       empleados:turnoActivo?turnoActivo.empleados:[],
-      ventasTotal:tv,pedidos:salesLog.length,
+      ventasTotal:tv,
+      pedidos:salesLog.length,
       propinas:salesLog.reduce(function(a,s){return a+(s.propina||0);},0),
       pagos:{
         efectivo:salesLog.filter(function(s){return s.pago==='efectivo';}).reduce(function(a,s){return a+s.total;},0),
@@ -1687,8 +1692,18 @@ function ejecutarCierreSesion(esCierre){
         tarjeta:salesLog.filter(function(s){return s.pago==='tarjeta';}).reduce(function(a,s){return a+s.total;},0)
       },
       salesByProduct:Object.assign({},salesByProduct),
-      inventario:INV.map(function(it){return{name:it.name,ap:it.ap,cierre:it.stock,unit:it.unit,min:it.min};})
-    });
+      inventario:INV.map(function(it){return{name:it.name,ap:it.ap,cierre:it.stock,unit:it.unit,min:it.min};}),
+      gastoTotal:gastos.reduce(function(a,g){return a+g.monto;},0)
+    };
+    historialTurnos.unshift(turnoGuardar);
+    // Guardar en servidor
+    if(window.location.protocol!=='file:'){
+      fetch('/api/historial',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(turnoGuardar)
+      }).catch(function(){});
+    }
   }
   // Limpiar estado en el servidor si es cierre total
   turnoId=null;
@@ -1733,14 +1748,31 @@ function ejecutarCierreSesion(esCierre){
 
 function renderHistorial(){
   var el=document.getElementById('hist-lista');if(!el)return;
-  if(!historialTurnos.length){el.innerHTML='<p style="font-size:12px;color:var(--gris-texto);">Sin turnos cerrados aún.</p>';return;}
+  if(!historialTurnos.length){
+    el.innerHTML='<p style="font-size:12px;color:var(--gris-texto);">Sin turnos cerrados aún.</p>';
+    return;
+  }
   el.innerHTML=historialTurnos.map(function(t){
-    var emps=t.empleados.map(function(e){return e.nombre+(e.hora?' ('+e.hora+')':'');}).join(', ');
+    var emps=(t.empleados||[]).map(function(e){return e.nombre;}).join(', ')||'—';
     var surtir=t.inventario?t.inventario.filter(function(i){return i.cierre<i.min;}).map(function(i){return i.name;}).join(', ')||'Nada':'—';
-    return '<div class="hc"><div class="hh"><span class="hf">'+t.fecha+' · '+t.horaApertura+'</span><span class="ht">$'+Math.round(t.ventasTotal)+'</span></div>'
+    var pagos=t.pagos||{};
+    var tg=t.gastoTotal||0;
+    var utilidad=(t.ventasTotal||0)-tg;
+    return '<div class="hc">'
+      +'<div class="hh">'
+      +'<span class="hf">📅 '+t.fecha+(t.horaApertura?' · '+t.horaApertura:'')+'</span>'
+      +'<span class="ht" style="color:var(--verde);">$'+Math.round(t.ventasTotal||0)+'</span>'
+      +'</div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-bottom:8px;">'
+      '<div style="background:var(--negro);border-radius:6px;padding:8px;"><div style="font-size:9px;color:var(--gris-texto);margin-bottom:2px;">PEDIDOS</div><div style="font-family:Bebas Neue,sans-serif;font-size:18px;">'+( t.pedidos||0)+'</div></div>'
+      '<div style="background:var(--negro);border-radius:6px;padding:8px;"><div style="font-size:9px;color:var(--gris-texto);margin-bottom:2px;">PROPINAS</div><div style="font-family:Bebas Neue,sans-serif;font-size:18px;color:var(--verde);">$'+Math.round(t.propinas||0)+'</div></div>'
+      '<div style="background:var(--negro);border-radius:6px;padding:8px;"><div style="font-size:9px;color:var(--gris-texto);margin-bottom:2px;">UTILIDAD</div><div style="font-family:Bebas Neue,sans-serif;font-size:18px;color:'+(utilidad>=0?'var(--verde)':'var(--rojo)')+';">$'+Math.round(utilidad)+'</div></div>'
+      +'</div>'
+      +(pagos.efectivo||pagos.transferencia||pagos.tarjeta?
+        '<div class="hd">💵 $'+Math.round(pagos.efectivo||0)+' · 📲 $'+Math.round(pagos.transferencia||0)+' · 💳 $'+Math.round(pagos.tarjeta||0)+'</div>':''
+      )
       +'<div class="hd">👥 '+esc(emps)+'</div>'
-      +'<div class="hd">'+t.pedidos+' pedidos · 🤝 $'+Math.round(t.propinas||0)+' propinas</div>'
-      +'<div class="hd" style="color:var(--rojo);">⚠ Por surtir: '+esc(surtir)+'</div>'
+      +'<div class="hd" style="color:var(--rojo);margin-top:4px;">⚠ Por surtir: '+esc(surtir)+'</div>'
       +'</div>';
   }).join('');
 }
