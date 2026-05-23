@@ -1,15 +1,58 @@
 const http = require('http');
-const fs = require('fs');
+const fs   = require('fs');
 const path = require('path');
 
 const PORT = process.env.PORT || 3000;
 
-let estado = {
-  domicilios: [],
-  domNum: 0,
-  turnoId: null
+// ── Estado global ────────────────────────────────────────────────
+let turno = {
+  id:        null,       // fecha YYYY-MM-DD
+  abierto:   false,
+  domicilios:[],
+  domNum:    0
 };
-let sesiones = {}; // {id: {nombre, hora, ultima}}
+
+// Empleados: { id: { nombre, rol, entrada, salida, activo, ultima } }
+let empleados = {};
+
+// ── Helpers ──────────────────────────────────────────────────────
+function cors(res) {
+  res.setHeader('Access-Control-Allow-Origin',  '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+}
+function json(res, code, data) {
+  cors(res);
+  res.writeHead(code, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify(data));
+}
+function body(req, cb) {
+  let b = '';
+  req.on('data', c => b += c.toString());
+  req.on('end',  () => cb(b));
+  req.on('error',() => cb(''));
+}
+function hoy() {
+  return new Date().toLocaleDateString('es-MX',
+    { timeZone:'America/Mexico_City', year:'numeric', month:'2-digit', day:'2-digit' }
+  ).split('/').reverse().join('-');
+}
+function hora() {
+  return new Date().toLocaleTimeString('es-MX',
+    { timeZone:'America/Mexico_City', hour:'2-digit', minute:'2-digit' }
+  );
+}
+function limpiarInactivos() {
+  const ahora = Date.now();
+  Object.keys(empleados).forEach(k => {
+    const e = empleados[k];
+    if (e.activo && ahora - e.ultima > 20000) {
+      e.activo  = false;
+      e.salida  = e.ultimaHora || hora();
+      console.log('⬤ Desconectado:', e.nombre, 'a las', e.salida);
+    }
+  });
+}
 
 const ARCHIVOS = {
   '/':           'FAMES_PuntoDeVenta.html',
@@ -18,145 +61,155 @@ const ARCHIVOS = {
   '/repartidor': 'FAMES_Repartidor.html'
 };
 
-function cors(res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-}
-
-function json(res, code, data) {
-  cors(res);
-  res.writeHead(code, { 'Content-Type': 'application/json' });
-  res.end(JSON.stringify(data));
-}
-
-function recibirBody(req, callback) {
-  let body = '';
-  req.on('data', chunk => { body += chunk.toString(); });
-  req.on('end', () => { callback(body); });
-  req.on('error', () => { callback(''); });
-}
-
+// ── Servidor ─────────────────────────────────────────────────────
 const server = http.createServer((req, res) => {
+  cors(res);
   const method = req.method.toUpperCase();
-  const url = req.url.split('?')[0].split('#')[0];
+  const url    = req.url.split('?')[0];
 
-  console.log(method, url);
+  if (method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
 
-  // CORS preflight
-  if (method === 'OPTIONS') {
-    cors(res);
-    res.writeHead(204);
-    res.end();
+  // ── Archivos HTML ─────────────────────────────────────────────
+  if (ARCHIVOS[url] && method === 'GET') {
+    fs.readFile(path.join(__dirname, ARCHIVOS[url]), (err, data) => {
+      if (err) { cors(res); res.writeHead(404); res.end('No encontrado'); return; }
+      cors(res);
+      res.writeHead(200, { 'Content-Type': 'text/html;charset=utf-8' });
+      res.end(data);
+    });
     return;
   }
 
-  // API: obtener estado
-  if (url === '/api/estado') {
-    json(res, 200, { ok: true, data: estado });
+  // ── GET /api/turno — estado del turno + empleados ─────────────
+  if (url === '/api/turno' && method === 'GET') {
+    limpiarInactivos();
+    json(res, 200, {
+      ok: true,
+      turno: {
+        id:      turno.id,
+        abierto: turno.abierto,
+        fecha:   turno.id || hoy(),
+        domNum:  turno.domNum
+      },
+      empleados: empleados,
+      domicilios: turno.domicilios
+    });
     return;
   }
 
-  // API: recibir pedido online
-  if (url === '/api/pedido-online') {
-    if (method !== 'POST') {
-      json(res, 405, { ok: false, error: 'Método no permitido' });
-      return;
-    }
-    recibirBody(req, function(body) {
+  // ── POST /api/login — empleado entra al turno ─────────────────
+  if (url === '/api/login' && method === 'POST') {
+    body(req, b => {
       try {
-        const pedido = JSON.parse(body);
-        if (!pedido.nombre || !pedido.items || !pedido.items.length) {
-          json(res, 400, { ok: false, error: 'Faltan datos: nombre e items requeridos' });
-          return;
+        const d = JSON.parse(b);
+        if (!d.nombre) { json(res, 400, { ok: false, error: 'Nombre requerido' }); return; }
+        const id = 'emp_' + d.nombre.toLowerCase().replace(/\s+/g,'_') + '_' + (d.id||'');
+        const yaExiste = empleados[id];
+        empleados[id] = {
+          id:       id,
+          nombre:   d.nombre,
+          rol:      d.rol || 'empleado',
+          entrada:  yaExiste && yaExiste.entrada ? yaExiste.entrada : hora(),
+          salida:   null,
+          activo:   true,
+          ultima:   Date.now(),
+          ultimaHora: hora()
+        };
+        // Si no hay turno abierto hoy, abrirlo
+        if (!turno.abierto || turno.id !== hoy()) {
+          turno.id       = hoy();
+          turno.abierto  = true;
+          turno.domicilios = [];
+          turno.domNum   = 0;
+          console.log('📅 Turno abierto:', turno.id);
         }
-        estado.domNum++;
-        pedido.id      = estado.domNum;
-        pedido.label   = 'DOM-' + estado.domNum;
-        pedido.estado  = 'pendiente';
-        pedido.origen  = 'online';
-        pedido.turnoId = estado.turnoId;
-        estado.domicilios.push(pedido);
-        console.log('PEDIDO OK:', pedido.label, pedido.nombre, '$' + pedido.total);
+        console.log('✅ Conectado:', d.nombre, '|', d.rol);
+        limpiarInactivos();
+        json(res, 200, {
+          ok:        true,
+          empId:     id,
+          turno:     { id: turno.id, abierto: turno.abierto, fecha: turno.id },
+          empleados: empleados
+        });
+      } catch(e) {
+        json(res, 500, { ok: false, error: e.message });
+      }
+    });
+    return;
+  }
+
+  // ── POST /api/ping — keepalive del empleado ───────────────────
+  if (url === '/api/ping' && method === 'POST') {
+    body(req, b => {
+      try {
+        const d = JSON.parse(b || '{}');
+        if (d.empId && empleados[d.empId]) {
+          empleados[d.empId].activo     = true;
+          empleados[d.empId].ultima     = Date.now();
+          empleados[d.empId].ultimaHora = hora();
+          empleados[d.empId].salida     = null;
+        }
+        limpiarInactivos();
+        json(res, 200, { ok: true, empleados: empleados });
+      } catch(e) {
+        json(res, 200, { ok: true, empleados: empleados });
+      }
+    });
+    return;
+  }
+
+  // ── POST /api/logout — empleado cierra sesión ─────────────────
+  if (url === '/api/logout' && method === 'POST') {
+    body(req, b => {
+      try {
+        const d = JSON.parse(b || '{}');
+        if (d.empId && empleados[d.empId]) {
+          empleados[d.empId].activo = false;
+          empleados[d.empId].salida = hora();
+          console.log('👋 Desconectado:', empleados[d.empId].nombre);
+        }
+        json(res, 200, { ok: true });
+      } catch(e) {
+        json(res, 200, { ok: true });
+      }
+    });
+    return;
+  }
+
+  // ── POST /api/pedido-online — cliente hace pedido ─────────────
+  if (url === '/api/pedido-online' && method === 'POST') {
+    body(req, b => {
+      try {
+        const pedido = JSON.parse(b);
+        if (!pedido.nombre || !pedido.items || !pedido.items.length) {
+          json(res, 400, { ok: false, error: 'Faltan datos' }); return;
+        }
+        turno.domNum++;
+        pedido.id     = turno.domNum;
+        pedido.label  = 'DOM-' + turno.domNum;
+        pedido.estado = 'pendiente';
+        pedido.origen = 'online';
+        pedido.turnoId = turno.id;
+        turno.domicilios.push(pedido);
+        console.log('🛵 Pedido:', pedido.label, pedido.nombre, '$'+pedido.total);
         json(res, 200, { ok: true, id: pedido.label });
       } catch(e) {
-        console.error('ERROR parseando pedido:', e.message, '| Body:', body.substring(0, 100));
-        json(res, 500, { ok: false, error: 'Error interno: ' + e.message });
+        console.error('Error pedido:', e.message);
+        json(res, 500, { ok: false, error: e.message });
       }
     });
     return;
   }
 
-  // API: reset al cerrar turno
-  if (url === '/api/reset') {
-    if (method !== 'POST') { json(res, 405, { ok: false, error: 'Método no permitido' }); return; }
-    recibirBody(req, function(body) {
+  // ── POST /api/sync — sincronizar estados de domicilios ────────
+  if (url === '/api/sync' && method === 'POST') {
+    body(req, b => {
       try {
-        const data = JSON.parse(body || '{}');
-        estado.domicilios = [];
-        estado.domNum = 0;
-        estado.turnoId = data.turnoId || Date.now().toString();
-        console.log('Turno reseteado. Nuevo turnoId:', estado.turnoId);
-        json(res, 200, { ok: true, turnoId: estado.turnoId });
-      } catch(e) {
-        estado.domicilios = [];
-        estado.domNum = 0;
-        estado.turnoId = Date.now().toString();
-        json(res, 200, { ok: true, turnoId: estado.turnoId });
-      }
-    });
-    return;
-  }
-
-  // API: ping — registrar dispositivo conectado
-  if (url === '/api/ping') {
-    if (method !== 'POST') { json(res, 405, { ok: false }); return; }
-    recibirBody(req, function(body) {
-      try {
-        const data = JSON.parse(body || '{}');
-        const id = data.id || 'anon';
-        sesiones[id] = {
-          nombre: data.nombre || 'Dispositivo',
-          rol: data.rol || 'pos',
-          hora: data.hora || '',
-          ultima: Date.now()
-        };
-        // Limpiar sesiones inactivas (más de 30 segundos)
-        const ahora = Date.now();
-        Object.keys(sesiones).forEach(function(k) {
-          if (ahora - sesiones[k].ultima > 30000) delete sesiones[k];
-        });
-        json(res, 200, { ok: true, sesiones: sesiones });
-      } catch(e) {
-        json(res, 200, { ok: true, sesiones: sesiones });
-      }
-    });
-    return;
-  }
-
-  // API: obtener sesiones activas
-  if (url === '/api/sesiones') {
-    const ahora = Date.now();
-    Object.keys(sesiones).forEach(function(k) {
-      if (ahora - sesiones[k].ultima > 30000) delete sesiones[k];
-    });
-    json(res, 200, { ok: true, sesiones: sesiones });
-    return;
-  }
-
-  // API: sincronizar estados de domicilios
-  if (url === '/api/sync') {
-    if (method !== 'POST') {
-      json(res, 405, { ok: false, error: 'Método no permitido' });
-      return;
-    }
-    recibirBody(req, function(body) {
-      try {
-        const data = JSON.parse(body);
-        if (data.domicilios && Array.isArray(data.domicilios)) {
-          data.domicilios.forEach(function(d) {
-            const idx = estado.domicilios.findIndex(x => x.id === d.id);
-            if (idx >= 0) estado.domicilios[idx].estado = d.estado;
+        const d = JSON.parse(b || '{}');
+        if (d.domicilios && Array.isArray(d.domicilios)) {
+          d.domicilios.forEach(dom => {
+            const idx = turno.domicilios.findIndex(x => x.id === dom.id);
+            if (idx >= 0) turno.domicilios[idx].estado = dom.estado;
           });
         }
         json(res, 200, { ok: true });
@@ -167,30 +220,29 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // Servir archivos HTML
-  if (ARCHIVOS[url]) {
-    const fp = path.join(__dirname, ARCHIVOS[url]);
-    fs.readFile(fp, function(err, data) {
-      if (err) {
-        cors(res);
-        res.writeHead(404, { 'Content-Type': 'text/plain' });
-        res.end('Archivo no encontrado: ' + ARCHIVOS[url]);
-        return;
-      }
-      cors(res);
-      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-      res.end(data);
+  // ── POST /api/reset — limpiar domicilios al cerrar turno ──────
+  if (url === '/api/reset' && method === 'POST') {
+    body(req, b => {
+      turno.domicilios = [];
+      turno.domNum     = 0;
+      turno.id         = hoy();
+      console.log('🔄 Domicilios limpiados');
+      json(res, 200, { ok: true, turnoId: turno.id });
     });
     return;
   }
 
-  // 404 para todo lo demás
+  // ── GET /api/estado — compatibilidad ─────────────────────────
+  if (url === '/api/estado' && method === 'GET') {
+    limpiarInactivos();
+    json(res, 200, { ok: true, data: { domicilios: turno.domicilios, domNum: turno.domNum } });
+    return;
+  }
+
   json(res, 404, { ok: false, error: 'Ruta no encontrada: ' + url });
 });
 
 server.on('error', e => console.error('Server error:', e.message));
-
-server.listen(PORT, '0.0.0.0', function() {
-  console.log('FAMES POS corriendo en puerto ' + PORT);
-  console.log('Rutas: / /pedidos /repartidor /api/estado /api/pedido-online /api/sync');
+server.listen(PORT, '0.0.0.0', () => {
+  console.log('🍔 FAMES POS en puerto ' + PORT);
 });

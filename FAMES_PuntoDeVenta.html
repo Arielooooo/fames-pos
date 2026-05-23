@@ -258,23 +258,32 @@ header{background:var(--gris-oscuro);border-bottom:1px solid var(--gris-borde);p
 </head>
 <body>
 
-<!-- SPLASH -->
+<!-- SPLASH / LOGIN -->
 <div class="splash" id="splash">
   <div class="splash-logo">FAMES</div>
   <div class="splash-sub">Hamburguesas · Alitas · Snacks</div>
-  <div class="splash-card">
-    <div class="splash-title">Apertura de turno</div>
-    <div><label class="splash-label">Fecha</label><input class="splash-input" id="ap-fecha" type="date"></div>
-    <div><label class="splash-label">Hora</label><input class="splash-input" id="ap-hora" type="time"></div>
+  <div class="splash-card" style="width:360px;">
+    <div class="splash-title">👋 Iniciar sesión</div>
+    <p style="font-size:12px;color:var(--gris-texto);margin-top:-6px;">Ingresa tu nombre para unirte al turno del día</p>
     <div>
-      <label class="splash-label">Empleados en turno</label>
-      <div class="emp-list" id="emp-list"><p style="font-size:11px;color:var(--gris-texto);">Sin empleados aún</p></div>
-      <div class="emp-add-row" style="margin-top:7px;">
-        <input class="emp-add-input" id="emp-input" placeholder="Nombre del empleado">
-        <button class="btn-emp-add" id="btn-emp-add">+ Agregar</button>
+      <label class="splash-label">Tu nombre</label>
+      <input class="splash-input" id="login-nombre" placeholder="Ej: Carlos" autocomplete="off">
+    </div>
+    <div>
+      <label class="splash-label">Tu rol</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+        <button class="rol-btn active" data-rol="cajero">🧾 Cajero</button>
+        <button class="rol-btn" data-rol="cocina">🍳 Cocina</button>
+        <button class="rol-btn" data-rol="mesero">🪑 Mesero</button>
+        <button class="rol-btn" data-rol="admin">👑 Admin</button>
       </div>
     </div>
-    <button class="btn-abrir" id="btn-abrir">ABRIR TURNO</button>
+    <div id="login-equipo" style="display:none;">
+      <label class="splash-label">Equipo conectado ahora</label>
+      <div id="equipo-lista" style="display:flex;flex-direction:column;gap:5px;max-height:130px;overflow-y:auto;"></div>
+    </div>
+    <button class="btn-abrir" id="btn-login">ENTRAR AL TURNO</button>
+    <p style="font-size:10px;color:var(--gris-texto);text-align:center;" id="login-fecha">Cargando...</p>
   </div>
 </div>
 
@@ -284,12 +293,16 @@ header{background:var(--gris-oscuro);border-bottom:1px solid var(--gris-borde);p
   <div class="logo">FAMES <span style="color:var(--blanco);">·</span> POS</div>
   <div class="header-right">
     <span class="turno-badge" id="turno-badge">Turno</span>
-    <span id="sesiones-disp" style="display:none;font-size:10px;padding:3px 8px;border-radius:5px;border:1px solid var(--verde);color:var(--verde);cursor:pointer;" title="Dispositivos conectados">👥</span>
+    <button class="btn-h" id="btn-equipo" style="border-color:var(--verde);color:var(--verde);">👥 <span id="emp-count">0</span></button>
     <span class="hora-disp" id="hora-disp">--:--</span>
     <button class="btn-h naranja" id="btn-qr">📱 QR</button>
     <button class="btn-h rojo" id="btn-goto-cierre">Cerrar turno</button>
   </div>
 </header>
+<div class="equipo-panel" id="equipo-panel">
+  <div class="equipo-panel-title">👥 Equipo conectado</div>
+  <div id="equipo-panel-lista"></div>
+</div>
 <div class="tab-bar">
   <div class="tab active" data-tab="pedido">🧾 Pedido</div>
   <div class="tab" data-tab="cocina">🍳 Cocina <span class="tab-badge" id="cbadge" style="display:none">0</span></div>
@@ -775,63 +788,131 @@ function sonarAlerta(){playTone(330,0.12,'square',0.18);setTimeout(function(){pl
 function sonarOnline(){[523,659,784,1047].forEach(function(f,i){setTimeout(function(){playTone(f,0.12,'sine',0.35);},i*110);});if(navigator.vibrate)navigator.vibrate([200,100,200,100,400]);}
 
 // ============================================================
-// SPLASH / APERTURA
+// LOGIN / SPLASH
 // ============================================================
+var rolSeleccionado = 'cajero';
+var empId = null;
+var miNombre = '';
+var miRol = '';
+var pingInterval = null;
+
 function initSplash(){
-  var d=new Date();
-  var fi=document.getElementById('ap-fecha'),hi=document.getElementById('ap-hora');
-  if(fi)fi.value=getHoy();
-  if(hi){var h=d.getHours(),m=d.getMinutes();hi.value=(h<10?'0':'')+h+':'+(m<10?'0':'')+m;}
-  renderEmpList();
+  // Cargar equipo conectado del servidor
+  if(window.location.protocol!=='file:'){
+    fetch('/api/turno')
+      .then(function(r){return r.json();})
+      .then(function(data){
+        if(data.ok){
+          renderEquipoSplash(data.empleados);
+          var fechaEl=document.getElementById('login-fecha');
+          if(fechaEl) fechaEl.textContent='Turno del día: '+data.turno.fecha;
+        }
+      }).catch(function(){});
+  } else {
+    var fechaEl=document.getElementById('login-fecha');
+    if(fechaEl) fechaEl.textContent='Turno del día: '+getHoy();
+  }
 }
 
-function renderEmpList(){
-  var el=document.getElementById('emp-list');if(!el)return;
-  if(!empleados.length){el.innerHTML='<p style="font-size:11px;color:var(--gris-texto);">Sin empleados aún</p>';return;}
-  el.innerHTML=empleados.map(function(e,i){
-    return '<div class="emp-row"><span class="emp-name">'+esc(e.nombre)+'</span><span class="emp-hora">'+e.hora+'</span><button class="emp-del" data-i="'+i+'">✕</button></div>';
+function renderEquipoSplash(emps){
+  var lista=Object.values(emps||{});
+  var panel=document.getElementById('login-equipo');
+  var el=document.getElementById('equipo-lista');
+  if(!el)return;
+  if(!lista.length){if(panel)panel.style.display='none';return;}
+  if(panel)panel.style.display='block';
+  el.innerHTML=lista.map(function(e){
+    var activo=e.activo;
+    return '<div class="emp-card">'
+      +'<div class="emp-dot '+(activo?'activo':'inactivo')+'"></div>'
+      +'<div><div class="emp-card-nombre">'+esc(e.nombre)+'</div>'
+      +'<div class="emp-card-rol">'+e.rol+' · entró '+e.entrada+(e.salida&&!activo?' · salió '+e.salida:'')+'</div></div>'
+      +'</div>';
   }).join('');
-  el.querySelectorAll('.emp-del').forEach(function(btn){
-    btn.addEventListener('click',function(){empleados.splice(parseInt(this.getAttribute('data-i')),1);renderEmpList();});
+}
+
+function loginEmpleado(){
+  var nombre=val('login-nombre').trim();
+  if(!nombre){document.getElementById('login-nombre').focus();showToast('Ingresa tu nombre','err');return;}
+  miNombre=nombre;miRol=rolSeleccionado;
+  var uniqueId='emp_'+nombre.toLowerCase().replace(/[^a-z0-9]/g,'_')+'_'+Date.now().toString().slice(-4);
+
+  if(window.location.protocol==='file:'){
+    // Modo local sin servidor
+    empId=uniqueId;
+    turnoActivo={fecha:getHoy(),hora:getNow(),empleados:[{nombre:nombre,rol:rolSeleccionado,hora:getNow()}]};
+    INV.forEach(function(i){i.ap=i.stock;});
+    abrirApp();return;
+  }
+
+  var btn=document.getElementById('btn-login');
+  btn.disabled=true;btn.textContent='CONECTANDO...';
+
+  fetch('/api/login',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({nombre:nombre,rol:rolSeleccionado,id:uniqueId})
+  })
+  .then(function(r){return r.json();})
+  .then(function(data){
+    if(!data.ok) throw new Error(data.error||'Error');
+    empId=data.empId;
+    turnoActivo={
+      fecha:data.turno.fecha,
+      hora:getNow(),
+      empleados:[{nombre:nombre,rol:rolSeleccionado,hora:getNow()}]
+    };
+    ultimoDomNum=0;
+    turnoId=data.turno.id;
+    INV.forEach(function(i){i.ap=i.stock;});
+    abrirApp();
+    iniciarPing();
+  })
+  .catch(function(e){
+    showToast('Error al conectar: '+e.message,'err');
+    btn.disabled=false;btn.textContent='ENTRAR AL TURNO';
   });
 }
 
-function agregarEmpleado(){
-  var inp=document.getElementById('emp-input');
-  var v=inp?inp.value.trim():'';if(!v)return;
-  empleados.push({nombre:v,hora:getNow()});
-  if(inp)inp.value='';
-  renderEmpList();
-}
-
-function abrirTurno(){
-  var fecha=val('ap-fecha'),hora=val('ap-hora');
-  if(!fecha||!hora){showToast('Ingresa fecha y hora','err');return;}
-  if(!empleados.length){showToast('Agrega al menos un empleado','err');return;}
-  turnoActivo={fecha:fecha,hora:hora,empleados:JSON.parse(JSON.stringify(empleados))};
-  INV.forEach(function(i){i.ap=i.stock;});
-  var splash=document.getElementById('splash'),app=document.getElementById('app');
-  if(splash)splash.style.display='none';
-  if(app)app.style.display='flex';
-  set('turno-badge',fecha+' · '+hora+' · '+empleados.map(function(e){return e.nombre;}).join(', '));
-  // Limpiar estado del servidor al abrir turno nuevo
-  ultimoDomNum=0;
-  turnoId = Date.now().toString();
-  if(window.location.protocol!=='file:'){
-    fetch('/api/reset',{
+function iniciarPing(){
+  if(pingInterval)clearInterval(pingInterval);
+  pingInterval=setInterval(function(){
+    if(!empId||!turnoActivo)return;
+    fetch('/api/ping',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({turnoId:turnoId})
+      body:JSON.stringify({empId:empId})
     })
     .then(function(r){return r.json();})
     .then(function(data){
-      // Usar el turnoId que confirma el servidor
-      if(data.turnoId) turnoId=data.turnoId;
-      console.log('Turno abierto con ID:',turnoId);
-    })
-    .catch(function(){});
-  }
+      if(data.empleados) renderEquipoApp(data.empleados);
+    }).catch(function(){});
+  },10000);
+}
+
+function abrirApp(){
+  var splash=document.getElementById('splash'),app=document.getElementById('app');
+  if(splash)splash.style.display='none';
+  if(app)app.style.display='flex';
+  set('turno-badge','📅 '+turnoActivo.fecha+' · '+miNombre+' ('+miRol+')');
   initApp();
+}
+
+function renderEquipoApp(emps){
+  var lista=Object.values(emps||{});
+  var activos=lista.filter(function(e){return e.activo;});
+  var countEl=document.getElementById('emp-count');
+  if(countEl) countEl.textContent=activos.length;
+  var el=document.getElementById('equipo-panel-lista');
+  if(!el)return;
+  el.innerHTML=lista.map(function(e){
+    return '<div class="emp-card" style="margin-bottom:5px;">'
+      +'<div class="emp-dot '+(e.activo?'activo':'inactivo')+'"></div>'
+      +'<div style="flex:1;"><div class="emp-card-nombre">'+esc(e.nombre)+'</div>'
+      +'<div class="emp-card-hora">'+(e.activo?'🟢 desde '+e.entrada:'⭕ salió '+e.salida)+'</div></div>'
+      +'<div class="emp-card-rol">'+e.rol+'</div>'
+      +'</div>';
+  }).join('')||'<p style="font-size:11px;color:var(--gris-texto);">Sin equipo conectado</p>';
 }
 
 // ============================================================
@@ -1471,9 +1552,19 @@ function cerrarTurno(){
   ultimoDomNum=0;
   INV.forEach(function(i){i.ap=i.stock;});
   invDesbloqueado=false;
+  // Logout del empleado
+  if(empId&&window.location.protocol!=='file:'){
+    fetch('/api/logout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({empId:empId})}).catch(function(){});
+  }
+  empId=null;miNombre='';miRol='';
+  if(pingInterval){clearInterval(pingInterval);pingInterval=null;}
   var app=document.getElementById('app'),splash=document.getElementById('splash');
   if(app)app.style.display='none';
   if(splash)splash.style.display='flex';
+  // Limpiar login
+  var ni=document.getElementById('login-nombre');if(ni)ni.value='';
+  document.querySelectorAll('.rol-btn').forEach(function(b,i){b.classList.toggle('active',i===0);});
+  rolSeleccionado='cajero';
   initSplash();showToast('Turno cerrado correctamente','ok');
 }
 
@@ -1625,11 +1716,23 @@ function actualizarBtnComanda(){
 // ============================================================
 window.addEventListener('DOMContentLoaded', function(){
 
-  // SPLASH
+  // SPLASH / LOGIN
   initSplash();
-  document.getElementById('btn-emp-add').addEventListener('click', agregarEmpleado);
-  document.getElementById('emp-input').addEventListener('keydown', function(e){if(e.key==='Enter')agregarEmpleado();});
-  document.getElementById('btn-abrir').addEventListener('click', abrirTurno);
+  document.getElementById('btn-login').addEventListener('click', loginEmpleado);
+  document.getElementById('login-nombre').addEventListener('keydown', function(e){if(e.key==='Enter')loginEmpleado();});
+  document.querySelectorAll('.rol-btn').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      rolSeleccionado=this.getAttribute('data-rol');
+      document.querySelectorAll('.rol-btn').forEach(function(b){b.classList.remove('active');});
+      this.classList.add('active');
+    });
+  });
+  // Recargar equipo cada 8s en el splash
+  setInterval(function(){
+    if(document.getElementById('splash').style.display!=='none'&&window.location.protocol!=='file:'){
+      fetch('/api/turno').then(function(r){return r.json();}).then(function(d){if(d.ok)renderEquipoSplash(d.empleados);}).catch(function(){});
+    }
+  },8000);
 
   // TABS
   document.querySelectorAll('.tab').forEach(function(tab){
@@ -1694,6 +1797,22 @@ window.addEventListener('DOMContentLoaded', function(){
 
   // HEADER
   document.getElementById('btn-qr').addEventListener('click', mostrarQR);
+  document.getElementById('btn-equipo').addEventListener('click', function(){
+    var panel=document.getElementById('equipo-panel');
+    if(panel)panel.classList.toggle('show');
+    // Actualizar al abrir
+    if(panel&&panel.classList.contains('show')&&window.location.protocol!=='file:'){
+      fetch('/api/turno').then(function(r){return r.json();}).then(function(d){if(d.ok)renderEquipoApp(d.empleados);}).catch(function(){});
+    }
+  });
+  // Cerrar panel equipo al click fuera
+  document.addEventListener('click',function(e){
+    var panel=document.getElementById('equipo-panel');
+    var btn=document.getElementById('btn-equipo');
+    if(panel&&panel.classList.contains('show')&&!panel.contains(e.target)&&e.target!==btn&&!btn.contains(e.target)){
+      panel.classList.remove('show');
+    }
+  });
   document.getElementById('btn-goto-cierre').addEventListener('click', function(){showTab('cierre');});
 
   // CAJA
@@ -1781,36 +1900,22 @@ function initRed(){
 }
 
 function pollServidor(){
-  // Registrar presencia del dispositivo
-  if(turnoActivo){
-    fetch(window.location.origin+'/api/ping',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        id:dispositivoId,
-        nombre:'POS - '+(turnoActivo?turnoActivo.empleados.map(function(e){return e.nombre;}).join(', '):''),
-        rol:'pos',
-        hora:getNow()
-      })
-    })
-    .then(function(r){return r.json();})
-    .then(function(data){
-      if(data.sesiones) renderSesiones(data.sesiones);
-    })
-    .catch(function(){});
-  }
-  fetch(window.location.origin+'/api/estado')
+  fetch(window.location.origin+'/api/turno')
     .then(function(r){ return r.json(); })
     .then(function(data){
       if(!data.ok) return;
-      var d = data.data;
+      var d = data;
+      // Actualizar equipo
+      if(d.empleados) renderEquipoApp(d.empleados);
       // Detectar pedido online nuevo
-      var nuevoNum = d.domNum || 0;
+      var nuevoNum = d.turno ? d.turno.domNum||0 : 0;
       if(nuevoNum > ultimoDomNum && ultimoDomNum > 0){
         sonarOnline();
-        showToast('🛵 Nuevo pedido online!','ok');
+        showToast('🛵 ¡Nuevo pedido online!','ok');
       }
       ultimoDomNum = nuevoNum;
+      var d = d.turno||{};
+      d.domicilios = data.domicilios||[];
       // Solo procesar domicilios si hay turno activo
       if(turnoActivo && turnoId && d.domicilios && d.domicilios.length){
         var huboNuevo=false;
