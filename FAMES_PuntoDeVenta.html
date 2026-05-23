@@ -2170,8 +2170,21 @@ function confirmarCustom(){
   if(notas) specs.push(notas);
   var specStr = specs.join(' · ');
 
-  // Agregar al pedido con especificaciones
+  // Para Chiquicomo: crear ID único por opción elegida
   var id = _customItem.id;
+  if(id === 'sn7'){
+    var opStr = _chiquicomoOpcion || 'Dedos de queso';
+    id = 'sn7_' + opStr.replace(/ /g,'_');
+    if(!_customItem._cloned){
+      _customItem = {
+        id: id,
+        name: 'Chiquicomo (' + opStr + ')',
+        price: _customItem.price,
+        _cloned: true
+      };
+    }
+    specStr = ''; // La opción ya está en el nombre
+  }
   var o = getOrder(currentTable);
   if(!o[id]) o[id] = {item:_customItem, qty:0, specs:[]};
   o[id].qty++;
