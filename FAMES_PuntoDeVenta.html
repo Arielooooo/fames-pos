@@ -943,19 +943,21 @@ function iniciarPing(){
 
 function abrirApp(estadoServidor){
   // Restaurar estado del turno desde el servidor
-  if(estadoServidor){
-    if(estadoServidor.salesLog&&estadoServidor.salesLog.length)       salesLog       = estadoServidor.salesLog;
-    if(estadoServidor.salesByProduct)                                  salesByProduct = estadoServidor.salesByProduct;
-    if(estadoServidor.cobroNum)                                        cobroNum       = estadoServidor.cobroNum;
-    if(estadoServidor.comNum)                                          comNum         = estadoServidor.comNum;
-    if(estadoServidor.cocina&&estadoServidor.cocina.length)            cocina         = estadoServidor.cocina;
-    if(estadoServidor.orders)                                          orders         = estadoServidor.orders;
-    if(estadoServidor.gastos&&estadoServidor.gastos.length)            gastos         = estadoServidor.gastos;
-    if(estadoServidor.gastoNum)                                        gastoNum       = estadoServidor.gastoNum;
-    if(estadoServidor.domicilios&&estadoServidor.domicilios.length)    domicilios     = estadoServidor.domicilios;
-    if(estadoServidor.domNum)                                          domNum         = estadoServidor.domNum;
-    ultimoDomNum = estadoServidor.domNum||0;
-    console.log('Estado restaurado: '+salesLog.length+' ventas, '+cocina.length+' comandas');
+  if(estadoServidor && estadoServidor.ok){
+    // /api/turno devuelve los datos directamente en el root
+    if(estadoServidor.salesLog&&estadoServidor.salesLog.length)     salesLog       = estadoServidor.salesLog;
+    if(estadoServidor.salesByProduct&&Object.keys(estadoServidor.salesByProduct).length) salesByProduct = estadoServidor.salesByProduct;
+    if(estadoServidor.cobroNum)                                      cobroNum       = estadoServidor.cobroNum;
+    if(estadoServidor.comNum)                                        comNum         = estadoServidor.comNum;
+    if(estadoServidor.cocina&&estadoServidor.cocina.length)          cocina         = estadoServidor.cocina;
+    if(estadoServidor.orders&&Object.keys(estadoServidor.orders).length) orders    = estadoServidor.orders;
+    if(estadoServidor.gastos&&estadoServidor.gastos.length)          gastos         = estadoServidor.gastos;
+    if(estadoServidor.gastoNum)                                      gastoNum       = estadoServidor.gastoNum;
+    if(estadoServidor.domicilios&&estadoServidor.domicilios.length)  domicilios     = estadoServidor.domicilios;
+    if(estadoServidor.turno&&estadoServidor.turno.domNum)            domNum         = estadoServidor.turno.domNum;
+    ultimoDomNum = estadoServidor.turno ? estadoServidor.turno.domNum||0 : 0;
+    console.log('✅ Estado restaurado: '+salesLog.length+' ventas, '+cocina.length+' comandas, $'+
+      salesLog.reduce(function(a,s){return a+s.total;},0).toFixed(2)+' total');
   }
   var splash=document.getElementById('splash'),app=document.getElementById('app');
   if(splash)splash.style.display='none';
@@ -1179,7 +1181,8 @@ function confirmarCobro(){
     renderOrder();renderMesaTabs();
   }
   cerrarModal('m-cobro');
-  sonarCobro();syncEstado();
+  sonarCobro();
+  setTimeout(syncEstado, 500);
   showToast('✓ Cobro #'+cobroNum+' $'+total.toFixed(2),'ok');
   if(alertas.length)setTimeout(function(){showToast('⚠ Stock bajo: '+alertas.slice(0,2).join(', '),'warn');sonarAlerta();},2800);
   mostrarTicket({num:cobroNum,mesa:mesa,items:items,subtotal:sub,propina:prop,total:total,pago:metodoPago,hora:hora,fecha:getHoy()});
