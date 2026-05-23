@@ -1630,43 +1630,30 @@ function mostrarResumenAdmin(){
   // Productos por surtir
   var surtir=INV.filter(function(i){return i.stock<i.min;}).map(function(i){return i.name;});
 
-  var msg='📊 RESUMEN DEL TURNO
-'
-    +'═══════════════════
-'
-    +'📅 Fecha: '+turnoActivo.fecha+'
-'
-    +'👥 Equipo: '+turnoActivo.empleados.map(function(e){return e.nombre;}).join(', ')+'
-
-'
-    +'💰 Ventas totales: $'+Math.round(tv)+'
-'
-    +'🧾 Pedidos: '+salesLog.length+'
-'
-    +'🎫 Ticket promedio: $'+Math.round(salesLog.length?tv/salesLog.length:0)+'
-'
-    +'🤝 Propinas: $'+Math.round(tpr)+'
-
-'
-    +'💵 Efectivo: $'+Math.round(tef)+'
-'
-    +'📲 Transfer.: $'+Math.round(ttr)+'
-'
-    +'💳 Tarjeta: $'+Math.round(ttar)+'
-
-'
-    +'💸 Gastos caja: $'+Math.round(tg)+'
-'
-    +'✅ Utilidad neta: $'+Math.round(tv-tg)+'
-
-'
-    +'🏆 Top productos: '+topProd+'
-
-'
-    +'⚠ SURTIR: '+(surtir.length?surtir.join(', '):'Nada por surtir')+'
-';
-
-  alert(msg);
+  var lineas=[
+    '📊 RESUMEN DEL TURNO',
+    '═══════════════════',
+    '📅 Fecha: '+turnoActivo.fecha,
+    '👥 Equipo: '+turnoActivo.empleados.map(function(e){return e.nombre;}).join(', '),
+    '',
+    '💰 Ventas totales: $'+Math.round(tv),
+    '🧾 Pedidos: '+salesLog.length,
+    '🎫 Ticket promedio: $'+Math.round(salesLog.length?tv/salesLog.length:0),
+    '🤝 Propinas: $'+Math.round(tpr),
+    '',
+    '💵 Efectivo: $'+Math.round(tef),
+    '📲 Transfer.: $'+Math.round(ttr),
+    '💳 Tarjeta: $'+Math.round(ttar),
+    '',
+    '💸 Gastos caja: $'+Math.round(tg),
+    '✅ Utilidad neta: $'+Math.round(tv-tg),
+    '',
+    '🏆 Top productos: '+topProd,
+    '',
+    '⚠ SURTIR: '+(surtir.length?surtir.join(', '):'Nada por surtir')
+  ];
+  var msg=lineas.join('\n');
+    alert(msg);
 
   // Preguntar si quiere exportar lista de compras también
   if(surtir.length&&confirm('¿Exportar lista de compras?')){
