@@ -2136,8 +2136,10 @@ window.addEventListener('DOMContentLoaded', function(){
 
   // COCINA
   document.getElementById('btn-ref-cocina').addEventListener('click', renderCocina);
-  if(document.getElementById('btn-refresh-equipo')) document.getElementById('btn-refresh-equipo').addEventListener('click', cargarEquipoAdmin);
-  document.getElementById('btn-limpiar-cocina').addEventListener('click', function(){
+  var btnRefEq=document.getElementById('btn-refresh-equipo');
+  if(btnRefEq) btnRefEq.addEventListener('click', cargarEquipoAdmin);
+  var btnLimpiar=document.getElementById('btn-limpiar-cocina');
+  if(btnLimpiar) btnLimpiar.addEventListener('click', function(){
     if(!confirm('¿Limpiar TODAS las comandas activas? Esto no cobra ni descuenta inventario.'))return;
     cocina=[];domicilios=[];
     updateCbadge();renderCocina();renderMesaTabs();
@@ -2179,6 +2181,11 @@ window.addEventListener('DOMContentLoaded', function(){
   // DOMICILIO MODAL
   document.getElementById('dom-ok').addEventListener('click', crearDomicilio);
   document.getElementById('dom-cancel').addEventListener('click', function(){cerrarModal('m-dom');});
+  // Modal personalización
+  var btnCustomOk=document.getElementById('custom-ok');
+  var btnCustomCancel=document.getElementById('custom-cancel');
+  if(btnCustomOk) btnCustomOk.addEventListener('click', confirmarCustom);
+  if(btnCustomCancel) btnCustomCancel.addEventListener('click', function(){ cerrarModal('m-custom'); _customItem=null; });
   document.querySelectorAll('[data-dp]').forEach(function(btn){
     btn.addEventListener('click',function(){
       domPago=this.getAttribute('data-dp');
