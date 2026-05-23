@@ -1208,9 +1208,13 @@ function enviarCocina(){
   comNum++;var hora=getNow();
   var items=keys.map(function(id){return{id:id,item:o[id].item,qty:o[id].qty,listo:false,specs:o[id].specs||[]};});
   cocina.push({id:comNum,mesa:currentTable,hora:hora,timestamp:Date.now(),items:items,cobrado:false});
+  // Limpiar pedido de la mesa después de enviar a cocina
+  orders[currentTable]={};
   updateCbadge();
   sonarCocina();
   syncEstado();
+  renderOrder();
+  renderMesaTabs();
   showToast('📋 Comanda #'+comNum+' enviada a cocina','ok');
 }
 
