@@ -358,7 +358,7 @@ function renderMenu(){
     });
   });
   menuEl.querySelectorAll('.mitem').forEach(function(card){
-    card.addEventListener('click',function(){addToCart(this.getAttribute('data-id'));});
+    card.addEventListener('click',function(){abrirCustom(this.getAttribute('data-id'));});
   });
 }
 
