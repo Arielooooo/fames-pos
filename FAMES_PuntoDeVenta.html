@@ -2106,6 +2106,8 @@ var _chiquicomoOpcion = 'Dedos de queso';
 
 function abrirCustomChiquicomo(){
   _chiquicomoOpcion = 'Dedos de queso';
+  _customItem = findItem('sn7'); // Setear para que confirmarCustom lo encuentre
+  _customIngs = []; // Sin ingredientes para quitar
   var tituloEl = document.getElementById('custom-titulo');
   if(tituloEl) tituloEl.textContent = 'Chiquicomo — Elige tu opción';
 
