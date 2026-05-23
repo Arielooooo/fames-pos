@@ -277,6 +277,11 @@ header{background:var(--gris-oscuro);border-bottom:1px solid var(--gris-borde);p
         <button class="rol-btn" data-rol="mesero">🪑 Mesero</button>
         <button class="rol-btn" data-rol="admin">👑 Admin</button>
       </div>
+      <div id="admin-pass-div" style="display:none;margin-top:8px;">
+        <label class="splash-label">Contraseña admin</label>
+        <input class="splash-input" id="admin-pass" type="password" placeholder="Contraseña">
+        <p style="font-size:10px;color:var(--rojo);min-height:14px;" id="admin-pass-err"></p>
+      </div>
     </div>
     <div id="login-equipo" style="display:none;">
       <label class="splash-label">Equipo conectado ahora</label>
@@ -293,16 +298,11 @@ header{background:var(--gris-oscuro);border-bottom:1px solid var(--gris-borde);p
   <div class="logo">FAMES <span style="color:var(--blanco);">·</span> POS</div>
   <div class="header-right">
     <span class="turno-badge" id="turno-badge">Turno</span>
-    <button class="btn-h" id="btn-equipo" style="border-color:var(--verde);color:var(--verde);">👥 <span id="emp-count">0</span></button>
     <span class="hora-disp" id="hora-disp">--:--</span>
     <button class="btn-h naranja" id="btn-qr">📱 QR</button>
     <button class="btn-h rojo" id="btn-goto-cierre">Cerrar turno</button>
   </div>
 </header>
-<div class="equipo-panel" id="equipo-panel">
-  <div class="equipo-panel-title">👥 Equipo conectado</div>
-  <div id="equipo-panel-lista"></div>
-</div>
 <div class="tab-bar">
   <div class="tab active" data-tab="pedido">🧾 Pedido</div>
   <div class="tab" data-tab="cocina">🍳 Cocina <span class="tab-badge" id="cbadge" style="display:none">0</span></div>
@@ -314,6 +314,7 @@ header{background:var(--gris-oscuro);border-bottom:1px solid var(--gris-borde);p
   <div class="tab" data-tab="stats">📈 Stats</div>
   <div class="tab" data-tab="cierre">🔒 Cierre</div>
   <div class="tab" data-tab="historial">📋 Historial</div>
+  <div class="tab admin-only" data-tab="equipo" style="display:none;">👥 Equipo</div>
 </div>
 
 <!-- PEDIDO -->
@@ -487,6 +488,24 @@ header{background:var(--gris-oscuro);border-bottom:1px solid var(--gris-borde);p
   <div id="hist-lista"><p style="font-size:12px;color:var(--gris-texto);">Sin turnos cerrados aún.</p></div>
 </div>
 
+
+<!-- EQUIPO (solo admin) -->
+<div class="full-tab" id="tab-equipo">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;max-width:700px;">
+    <div class="sec-title" style="margin:0;">👥 Equipo del turno</div>
+    <button class="btn-add" id="btn-refresh-equipo">↻ Actualizar</button>
+  </div>
+  <!-- Resumen rápido -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:16px;max-width:700px;">
+    <div class="cstat"><div class="cstat-l">Conectados ahora</div><div class="cstat-v" id="eq-activos" style="color:var(--verde);">0</div></div>
+    <div class="cstat"><div class="cstat-l">Total del turno</div><div class="cstat-v" id="eq-total">0</div></div>
+    <div class="cstat"><div class="cstat-l">Turno del día</div><div class="cstat-v" id="eq-fecha" style="font-size:14px;margin-top:4px;">—</div></div>
+  </div>
+  <!-- Lista de empleados -->
+  <div class="sec-title" style="margin-bottom:10px;">Registro de entradas y salidas</div>
+  <div id="equipo-lista-admin" style="max-width:700px;"></div>
+</div>
+
 </div><!-- /app -->
 
 <!-- MODALES -->
@@ -524,6 +543,25 @@ header{background:var(--gris-oscuro);border-bottom:1px solid var(--gris-borde);p
   <div class="ma">
     <button class="bca" id="cobro-cancel">Cancelar</button>
     <button class="bok" id="cobro-ok" style="background:var(--rojo);font-size:16px;">COBRAR</button>
+  </div>
+</div></div>
+
+
+<!-- MODAL PERSONALIZACIÓN DE PRODUCTO -->
+<div class="mo" id="m-custom"><div class="mc" style="width:360px;max-height:90vh;overflow-y:auto;">
+  <div class="mt" id="custom-titulo">Personalizar</div>
+  <p style="font-size:11px;color:var(--gris-texto);margin-top:-6px;">Marca para quitar ingredientes o agrega especificaciones</p>
+  <div>
+    <label class="ml" style="margin-bottom:6px;display:block;">Ingredientes</label>
+    <div class="custom-ingredientes" id="custom-ings"></div>
+  </div>
+  <div class="mf" style="margin-top:4px;">
+    <label class="ml">Notas extra (cocina)</label>
+    <input class="mi" id="custom-notas" placeholder="Ej: muy bien cocida, sin sal...">
+  </div>
+  <div class="ma">
+    <button class="bca" id="custom-cancel">Cancelar</button>
+    <button class="bok" id="custom-ok">✓ AGREGAR</button>
   </div>
 </div></div>
 
@@ -736,6 +774,8 @@ var INV=[
 // ============================================================
 var MESAS=['M1','M2','M3','M4','M5','M6','MA1','MA2','B1','B2'];
 var PASS='necaxa05';
+var PASS_ADMIN='fames2025';
+var ROLES_ADMIN=['admin'];
 var orders={}, cocina=[], domicilios=[], salesLog=[], salesByProduct={}, gastos=[], historialTurnos=[];
 var currentTable='M1', cobroNum=0, comNum=0, domNum=0, gastoNum=0;
 var metodoPago='efectivo', domPago='efectivo';
@@ -834,6 +874,16 @@ function renderEquipoSplash(emps){
 function loginEmpleado(){
   var nombre=val('login-nombre').trim();
   if(!nombre){document.getElementById('login-nombre').focus();showToast('Ingresa tu nombre','err');return;}
+  // Validar contraseña si es admin
+  if(rolSeleccionado==='admin'){
+    var passAdmin=document.getElementById('admin-pass')?document.getElementById('admin-pass').value:'';
+    var errEl=document.getElementById('admin-pass-err');
+    if(passAdmin!==PASS_ADMIN){
+      if(errEl) errEl.textContent='❌ Contraseña incorrecta';
+      setTimeout(function(){if(errEl)errEl.textContent='';},2000);
+      return;
+    }
+  }
   miNombre=nombre;miRol=rolSeleccionado;
   var uniqueId='emp_'+nombre.toLowerCase().replace(/[^a-z0-9]/g,'_')+'_'+Date.now().toString().slice(-4);
 
@@ -862,11 +912,12 @@ function loginEmpleado(){
       hora:getNow(),
       empleados:[{nombre:nombre,rol:rolSeleccionado,hora:getNow()}]
     };
-    ultimoDomNum=0;
     turnoId=data.turno.id;
     INV.forEach(function(i){i.ap=i.stock;});
-    abrirApp();
+    abrirApp(data);
     iniciarPing();
+    // Sincronizar estado cada 30s automáticamente
+    iniciarSyncAuto();
   })
   .catch(function(e){
     showToast('Error al conectar: '+e.message,'err');
@@ -890,7 +941,22 @@ function iniciarPing(){
   },10000);
 }
 
-function abrirApp(){
+function abrirApp(estadoServidor){
+  // Restaurar estado del turno desde el servidor
+  if(estadoServidor){
+    if(estadoServidor.salesLog&&estadoServidor.salesLog.length)       salesLog       = estadoServidor.salesLog;
+    if(estadoServidor.salesByProduct)                                  salesByProduct = estadoServidor.salesByProduct;
+    if(estadoServidor.cobroNum)                                        cobroNum       = estadoServidor.cobroNum;
+    if(estadoServidor.comNum)                                          comNum         = estadoServidor.comNum;
+    if(estadoServidor.cocina&&estadoServidor.cocina.length)            cocina         = estadoServidor.cocina;
+    if(estadoServidor.orders)                                          orders         = estadoServidor.orders;
+    if(estadoServidor.gastos&&estadoServidor.gastos.length)            gastos         = estadoServidor.gastos;
+    if(estadoServidor.gastoNum)                                        gastoNum       = estadoServidor.gastoNum;
+    if(estadoServidor.domicilios&&estadoServidor.domicilios.length)    domicilios     = estadoServidor.domicilios;
+    if(estadoServidor.domNum)                                          domNum         = estadoServidor.domNum;
+    ultimoDomNum = estadoServidor.domNum||0;
+    console.log('Estado restaurado: '+salesLog.length+' ventas, '+cocina.length+' comandas');
+  }
   var splash=document.getElementById('splash'),app=document.getElementById('app');
   if(splash)splash.style.display='none';
   if(app)app.style.display='flex';
@@ -899,26 +965,18 @@ function abrirApp(){
 }
 
 function renderEquipoApp(emps){
-  var lista=Object.values(emps||{});
-  var activos=lista.filter(function(e){return e.activo;});
-  var countEl=document.getElementById('emp-count');
-  if(countEl) countEl.textContent=activos.length;
-  var el=document.getElementById('equipo-panel-lista');
-  if(!el)return;
-  el.innerHTML=lista.map(function(e){
-    return '<div class="emp-card" style="margin-bottom:5px;">'
-      +'<div class="emp-dot '+(e.activo?'activo':'inactivo')+'"></div>'
-      +'<div style="flex:1;"><div class="emp-card-nombre">'+esc(e.nombre)+'</div>'
-      +'<div class="emp-card-hora">'+(e.activo?'🟢 desde '+e.entrada:'⭕ salió '+e.salida)+'</div></div>'
-      +'<div class="emp-card-rol">'+e.rol+'</div>'
-      +'</div>';
-  }).join('')||'<p style="font-size:11px;color:var(--gris-texto);">Sin equipo conectado</p>';
+  // Si está en tab equipo y es admin, actualizar tabla
+  var tabEquipo=document.getElementById('tab-equipo');
+  if(tabEquipo&&tabEquipo.style.display!=='none'&&miRol==='admin'){
+    renderEquipoAdmin(emps);
+  }
 }
 
 // ============================================================
 // APP INIT
 // ============================================================
 function initApp(){
+  mostrarTabEquipo();
   renderMenuAll();renderMesaTabs();renderOrder();
   updateHora();setInterval(updateHora,30000);
   setInterval(function(){
@@ -955,7 +1013,7 @@ function renderMenuSec(items,cid,isDrink){
       +'</div>';
   }).join('');
   el.querySelectorAll('.mitem').forEach(function(card,j){
-    card.addEventListener('click',function(){addItem(items[j].id);});
+    card.addEventListener('click',function(){addItemConCustom(items[j].id);});
   });
 }
 
@@ -965,9 +1023,23 @@ function renderMenuSec(items,cid,isDrink){
 function addItem(id){
   var item=findItem(id);if(!item)return;
   var o=getOrder(currentTable);
-  if(!o[id])o[id]={item:item,qty:0};
+  if(!o[id])o[id]={item:item,qty:0,specs:[]};
   o[id].qty++;
   renderOrder();sonarProducto();showToast('+'+item.name,'ok');
+}
+
+function addItemConCustom(id){
+  // Intentar personalizar si tiene receta
+  var receta = RECETAS[id]||[];
+  var tieneIng = receta.some(function(r){
+    var n=r.inv.toLowerCase();
+    return n.indexOf('papel')<0&&n.indexOf('bolsa')<0&&n.indexOf('contenedor')<0;
+  });
+  if(tieneIng){
+    abrirCustom(id);
+  } else {
+    addItem(id);
+  }
 }
 
 function changeQty(id,d){
@@ -995,8 +1067,15 @@ function renderOrder(){
   var sub=0;
   el.innerHTML=keys.map(function(id){
     var it=o[id].item,qty=o[id].qty,s=it.price*qty;sub+=s;
-    return '<div class="orow">'
-      +'<span class="oname">'+esc(it.name)+'</span>'
+    var specsHtml='';
+    if(o[id].specs&&o[id].specs.length){
+      specsHtml='<div style="font-size:9px;color:var(--naranja);padding-left:2px;margin-top:1px;">'+esc(o[id].specs.join(' · '))+'</div>';
+    }
+    return '<div class="orow" style="flex-wrap:wrap;">'
+      +'<div style="flex:1;min-width:0;">'
+      +'<div class="oname">'+esc(it.name)+'</div>'
+      +specsHtml
+      +'</div>'
       +'<div class="qctrl">'
       +'<button class="qbtn" data-id="'+id+'" data-d="-1">−</button>'
       +'<span class="qnum">'+qty+'</span>'
@@ -1037,7 +1116,7 @@ function cobrar(){
   keys.forEach(function(id){
     var it=o[id].item,qty=o[id].qty;
     sub+=it.price*qty;
-    items.push({id:id,name:it.name,price:it.price,qty:qty});
+    items.push({id:id,name:it.name,price:it.price,qty:qty,specs:o[id].specs||[]});
   });
   _cobroData={mesa:currentTable,items:items,subtotal:sub,esComanda:false};
   abrirModalCobro(sub,items);
@@ -1100,7 +1179,7 @@ function confirmarCobro(){
     renderOrder();renderMesaTabs();
   }
   cerrarModal('m-cobro');
-  sonarCobro();
+  sonarCobro();syncEstado();
   showToast('✓ Cobro #'+cobroNum+' $'+total.toFixed(2),'ok');
   if(alertas.length)setTimeout(function(){showToast('⚠ Stock bajo: '+alertas.slice(0,2).join(', '),'warn');sonarAlerta();},2800);
   mostrarTicket({num:cobroNum,mesa:mesa,items:items,subtotal:sub,propina:prop,total:total,pago:metodoPago,hora:hora,fecha:getHoy()});
@@ -1114,7 +1193,7 @@ function enviarCocina(){
   var o=getOrder(currentTable),keys=Object.keys(o);
   if(!keys.length){showToast('Agrega productos primero','err');return;}
   comNum++;var hora=getNow();
-  var items=keys.map(function(id){return{id:id,item:o[id].item,qty:o[id].qty,listo:false};});
+  var items=keys.map(function(id){return{id:id,item:o[id].item,qty:o[id].qty,listo:false,specs:o[id].specs||[]};});
   cocina.push({id:comNum,mesa:currentTable,hora:hora,timestamp:Date.now(),items:items,cobrado:false});
   updateCbadge();sonarCocina();showToast('📋 Comanda #'+comNum+' enviada','ok');
 }
@@ -1144,7 +1223,10 @@ function renderCocina(){
       +c.items.map(function(it,j){
         return '<div class="com-item'+(it.listo?' listo':'')+'">'
           +'<span class="com-qty">'+it.qty+'x</span>'
-          +'<span class="com-nom">'+esc(it.item.name)+(it.esExtra?' <span style="font-size:9px;background:rgba(244,124,32,.2);color:var(--naranja);border:1px solid var(--naranja);border-radius:3px;padding:1px 4px;">EXTRA</span>':'')+'</span>'
+          +'<div style="flex:1;">'
+        +'<div class="com-nom">'+esc(it.item.name)+(it.esExtra?' <span style="font-size:9px;background:rgba(244,124,32,.2);color:var(--naranja);border:1px solid var(--naranja);border-radius:3px;padding:1px 4px;">EXTRA</span>':'')+'</div>'
+        +(it.specs&&it.specs.length?'<div style="font-size:10px;color:var(--naranja);margin-top:1px;">'+esc(it.specs.join(' · '))+'</div>':'')
+        +'</div>'
           +'<button class="btn-listo'+(it.listo?' done':'')+'" data-cid="'+c.id+'" data-idx="'+j+'">'+(it.listo?'✓':'Listo')+'</button>'
           +'</div>';
       }).join('')
@@ -1526,14 +1608,101 @@ function exportarCSV(){
 }
 
 function cerrarTurno(){
-  if(!confirm('¿Cerrar el turno? Se guardará en el historial.'))return;
-  // Limpiar estado en el servidor
+  if(miRol==='admin'){
+    mostrarResumenAdmin();return;
+  }
+  if(!confirm('¿Cerrar tu sesión del turno?'))return;
+  ejecutarCierreSesion();
+}
+
+function mostrarResumenAdmin(){
+  var tv=salesLog.reduce(function(a,s){return a+s.total;},0);
+  var tg=gastos.reduce(function(a,g){return a+g.monto;},0);
+  var tpr=salesLog.reduce(function(a,s){return a+(s.propina||0);},0);
+  var tef=salesLog.filter(function(s){return s.pago==='efectivo';}).reduce(function(a,s){return a+s.total;},0);
+  var ttr=salesLog.filter(function(s){return s.pago==='transferencia';}).reduce(function(a,s){return a+s.total;},0);
+  var ttar=salesLog.filter(function(s){return s.pago==='tarjeta';}).reduce(function(a,s){return a+s.total;},0);
+
+  // Top 3 productos
+  var sorted=Object.keys(salesByProduct).map(function(id){return{id:id,qty:salesByProduct[id]};}).sort(function(a,b){return b.qty-a.qty;}).slice(0,3);
+  var topProd=sorted.map(function(p){var it=findItem(p.id);return it?p.qty+'x '+it.name:'';}).filter(Boolean).join(', ')||'—';
+
+  // Productos por surtir
+  var surtir=INV.filter(function(i){return i.stock<i.min;}).map(function(i){return i.name;});
+
+  var msg='📊 RESUMEN DEL TURNO
+'
+    +'═══════════════════
+'
+    +'📅 Fecha: '+turnoActivo.fecha+'
+'
+    +'👥 Equipo: '+turnoActivo.empleados.map(function(e){return e.nombre;}).join(', ')+'
+
+'
+    +'💰 Ventas totales: $'+Math.round(tv)+'
+'
+    +'🧾 Pedidos: '+salesLog.length+'
+'
+    +'🎫 Ticket promedio: $'+Math.round(salesLog.length?tv/salesLog.length:0)+'
+'
+    +'🤝 Propinas: $'+Math.round(tpr)+'
+
+'
+    +'💵 Efectivo: $'+Math.round(tef)+'
+'
+    +'📲 Transfer.: $'+Math.round(ttr)+'
+'
+    +'💳 Tarjeta: $'+Math.round(ttar)+'
+
+'
+    +'💸 Gastos caja: $'+Math.round(tg)+'
+'
+    +'✅ Utilidad neta: $'+Math.round(tv-tg)+'
+
+'
+    +'🏆 Top productos: '+topProd+'
+
+'
+    +'⚠ SURTIR: '+(surtir.length?surtir.join(', '):'Nada por surtir')+'
+';
+
+  alert(msg);
+
+  // Preguntar si quiere exportar lista de compras también
+  if(surtir.length&&confirm('¿Exportar lista de compras?')){
+    exportarCSV();
+  }
+
+  if(!confirm('¿Cerrar el turno definitivamente?'))return;
+  ejecutarCierreSesion(true);
+}
+
+function ejecutarCierreSesion(esCierre){
+  // Guardar en historial si es admin cerrando turno
+  if(esCierre){
+    var tv=salesLog.reduce(function(a,s){return a+s.total;},0);
+    historialTurnos.unshift({
+      fecha:turnoActivo?turnoActivo.fecha:getHoy(),
+      horaApertura:turnoActivo?turnoActivo.hora:'',
+      empleados:turnoActivo?turnoActivo.empleados:[],
+      ventasTotal:tv,pedidos:salesLog.length,
+      propinas:salesLog.reduce(function(a,s){return a+(s.propina||0);},0),
+      pagos:{
+        efectivo:salesLog.filter(function(s){return s.pago==='efectivo';}).reduce(function(a,s){return a+s.total;},0),
+        transferencia:salesLog.filter(function(s){return s.pago==='transferencia';}).reduce(function(a,s){return a+s.total;},0),
+        tarjeta:salesLog.filter(function(s){return s.pago==='tarjeta';}).reduce(function(a,s){return a+s.total;},0)
+      },
+      salesByProduct:Object.assign({},salesByProduct),
+      inventario:INV.map(function(it){return{name:it.name,ap:it.ap,cierre:it.stock,unit:it.unit,min:it.min};})
+    });
+  }
+  // Limpiar estado en el servidor si es cierre total
   turnoId=null;
-  if(window.location.protocol!=='file:'){
+  if(window.location.protocol!=='file:'&&esCierre){
     fetch('/api/reset',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({turnoId:null})
+      body:'{}'
     }).catch(function(){});
   }
   var tv=salesLog.reduce(function(a,s){return a+s.total;},0);
@@ -1644,7 +1813,7 @@ function cerrarModal(id){var m=document.getElementById(id);if(m)m.classList.remo
 // ============================================================
 function showTab(tab){
   if(tab==='inventario'&&!invDesbloqueado){mostrarInventario();return;}
-  var TABS=['pedido','cocina','mesas','domicilios','inventario','caja','reporte','stats','cierre','historial'];
+  var TABS=['pedido','cocina','mesas','domicilios','inventario','caja','reporte','stats','cierre','historial','equipo'];
   TABS.forEach(function(t){var el=document.getElementById('tab-'+t);if(el)el.style.display='none';});
   document.querySelectorAll('.tab').forEach(function(el){el.classList.toggle('active',el.getAttribute('data-tab')===tab);});
   var active=document.getElementById('tab-'+tab);
@@ -1658,6 +1827,7 @@ function showTab(tab){
   if(tab==='stats')renderStats();
   if(tab==='cierre')renderCierre();
   if(tab==='historial')renderHistorial();
+  if(tab==='equipo'){cargarEquipoAdmin();}
 }
 
 
@@ -1714,6 +1884,186 @@ function actualizarBtnComanda(){
 // ============================================================
 // EVENT LISTENERS — DOMContentLoaded
 // ============================================================
+
+
+// ===== TAB EQUIPO (solo admin) =====
+function renderEquipoAdmin(emps){
+  var lista = Object.values(emps || {});
+  var activos = lista.filter(function(e){ return e.activo; }).length;
+  set('eq-activos', activos);
+  set('eq-total', lista.length);
+  set('eq-fecha', turnoActivo ? turnoActivo.fecha : getHoy());
+
+  var el = document.getElementById('equipo-lista-admin');
+  if(!el) return;
+  if(!lista.length){
+    el.innerHTML='<p style="font-size:12px;color:var(--gris-texto);">Sin empleados registrados en este turno.</p>';
+    return;
+  }
+
+  // Ordenar: activos primero
+  lista.sort(function(a,b){ return (b.activo?1:0)-(a.activo?1:0); });
+
+  var tablaHtml = '<table class="emp-table"><thead><tr>'
+    +'<th style="width:28%;">Nombre</th>'
+    +'<th style="width:15%;">Rol</th>'
+    +'<th style="width:18%;text-align:center;">Entrada</th>'
+    +'<th style="width:18%;text-align:center;">Salida</th>'
+    +'<th style="width:21%;text-align:center;">Estado</th>'
+    +'</tr></thead><tbody>';
+
+  lista.forEach(function(e){
+    var esAdmin = e.rol === 'admin';
+    tablaHtml += '<tr>'
+      +'<td style="font-weight:500;">'+esc(e.nombre)+'</td>'
+      +'<td><span class="emp-rol-badge'+(esAdmin?' admin':'')+'">'+e.rol+'</span></td>'
+      +'<td style="text-align:center;color:var(--blanco);">'+e.entrada+'</td>'
+      +'<td style="text-align:center;color:var(--gris-texto);">'+(e.salida&&!e.activo?e.salida:'—')+'</td>'
+      +'<td style="text-align:center;">'
+      +'<span class="emp-status '+(e.activo?'online':'offline')+'">'
+      +(e.activo?'🟢 Conectado':'⭕ Desconectado')
+      +'</span></td>'
+      +'</tr>';
+  });
+
+  tablaHtml += '</tbody></table>';
+  el.innerHTML = tablaHtml;
+}
+
+function cargarEquipoAdmin(){
+  if(window.location.protocol==='file:') return;
+  fetch('/api/turno')
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if(data.ok && data.empleados) renderEquipoAdmin(data.empleados);
+    })
+    .catch(function(){});
+}
+
+function mostrarTabEquipo(){
+  // Solo mostrar si es admin
+  if(miRol==='admin'){
+    document.querySelectorAll('.admin-only').forEach(function(el){ el.style.display=''; });
+  }
+}
+
+
+// ===== PERSONALIZACIÓN DE PRODUCTOS =====
+var _customItem = null;   // item actual en personalización
+var _customIngs = [];     // [{name, incluido}]
+
+function abrirCustom(itemId){
+  var item = findItem(itemId);
+  if(!item){ addItem(itemId); return; }
+
+  // Obtener ingredientes de la receta
+  var receta = RECETAS[itemId] || [];
+
+  // Ingredientes que no son empaque/papel (los que ve el cliente)
+  var ingredientesFiltrados = receta.filter(function(r){
+    var nombre = r.inv.toLowerCase();
+    return nombre.indexOf('papel') < 0 && nombre.indexOf('bolsa') < 0 && nombre.indexOf('contenedor') < 0;
+  });
+
+  if(!ingredientesFiltrados.length){
+    // Sin receta o solo empaque — agregar directo con campo de notas simple
+    addItem(itemId);
+    return;
+  }
+
+  _customItem = item;
+  _customIngs = ingredientesFiltrados.map(function(r){
+    return { name: r.inv, incluido: true };
+  });
+
+  // Renderizar ingredientes
+  var tituloEl = document.getElementById('custom-titulo');
+  if(tituloEl) tituloEl.textContent = item.name + ' — Personalizar';
+
+  var el = document.getElementById('custom-ings');
+  if(el){
+    el.innerHTML = _customIngs.map(function(ing, i){
+      // Limpiar nombre para mostrar (quitar unidades entre paréntesis)
+      var nombreLimpio = ing.name.replace(/\s*\([^)]*\)/g,'').replace(/\s*(g|ml|reb|pzas|hojas|mitades)$/i,'').trim();
+      return '<div class="ing-row" id="ing-row-'+i+'">'
+        +'<input type="checkbox" class="ing-check" checked data-idx="'+i+'" id="ing-chk-'+i+'">'
+        +'<label class="ing-name" for="ing-chk-'+i+'">'+nombreLimpio+'</label>'
+        +'</div>';
+    }).join('');
+
+    // Listeners para tachar al desmarcar
+    el.querySelectorAll('.ing-check').forEach(function(chk){
+      chk.addEventListener('change', function(){
+        var idx = parseInt(this.getAttribute('data-idx'));
+        _customIngs[idx].incluido = this.checked;
+        var row = document.getElementById('ing-row-'+idx);
+        if(row) row.classList.toggle('quitado', !this.checked);
+      });
+    });
+  }
+
+  var notasEl = document.getElementById('custom-notas');
+  if(notasEl) notasEl.value = '';
+
+  abrirModal('m-custom');
+  setTimeout(function(){ var n=document.getElementById('custom-notas'); if(n)n.focus(); }, 200);
+}
+
+function confirmarCustom(){
+  if(!_customItem) return;
+
+  // Construir especificaciones
+  var quitados = _customIngs.filter(function(i){ return !i.incluido; }).map(function(i){
+    return 'Sin '+i.name.replace(/\s*\([^)]*\)/g,'').replace(/\s*(g|ml|reb|pzas|hojas|mitades)$/i,'').trim().toLowerCase();
+  });
+  var notas = document.getElementById('custom-notas') ? document.getElementById('custom-notas').value.trim() : '';
+  var specs = [];
+  if(quitados.length) specs = specs.concat(quitados);
+  if(notas) specs.push(notas);
+  var specStr = specs.join(' · ');
+
+  // Agregar al pedido con especificaciones
+  var id = _customItem.id;
+  var o = getOrder(currentTable);
+  if(!o[id]) o[id] = {item:_customItem, qty:0, specs:[]};
+  o[id].qty++;
+  if(!o[id].specs) o[id].specs = [];
+  if(specStr) o[id].specs.push(specStr);
+
+  cerrarModal('m-custom');
+  renderOrder();
+  sonarProducto();
+  showToast('+ '+_customItem.name+(specStr?' ('+specStr+')':''),'ok');
+  _customItem = null;
+}
+
+// ===== SYNC AUTOMÁTICO CON SERVIDOR =====
+var syncInterval = null;
+
+function iniciarSyncAuto(){
+  if(syncInterval) clearInterval(syncInterval);
+  syncInterval = setInterval(syncEstado, 15000);
+}
+
+function syncEstado(){
+  if(!turnoActivo||window.location.protocol==='file:') return;
+  fetch('/api/sync',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      salesLog:salesLog,
+      salesByProduct:salesByProduct,
+      cobroNum:cobroNum,
+      comNum:comNum,
+      cocina:cocina,
+      orders:orders,
+      gastos:gastos,
+      gastoNum:gastoNum,
+      domicilios:domicilios
+    })
+  }).catch(function(){});
+}
+
 window.addEventListener('DOMContentLoaded', function(){
 
   // SPLASH / LOGIN
@@ -1725,6 +2075,8 @@ window.addEventListener('DOMContentLoaded', function(){
       rolSeleccionado=this.getAttribute('data-rol');
       document.querySelectorAll('.rol-btn').forEach(function(b){b.classList.remove('active');});
       this.classList.add('active');
+      var adminDiv=document.getElementById('admin-pass-div');
+      if(adminDiv) adminDiv.style.display=rolSeleccionado==='admin'?'block':'none';
     });
   });
   // Recargar equipo cada 8s en el splash
@@ -1784,6 +2136,7 @@ window.addEventListener('DOMContentLoaded', function(){
 
   // COCINA
   document.getElementById('btn-ref-cocina').addEventListener('click', renderCocina);
+  if(document.getElementById('btn-refresh-equipo')) document.getElementById('btn-refresh-equipo').addEventListener('click', cargarEquipoAdmin);
   document.getElementById('btn-limpiar-cocina').addEventListener('click', function(){
     if(!confirm('¿Limpiar TODAS las comandas activas? Esto no cobra ni descuenta inventario.'))return;
     cocina=[];domicilios=[];
@@ -1797,22 +2150,7 @@ window.addEventListener('DOMContentLoaded', function(){
 
   // HEADER
   document.getElementById('btn-qr').addEventListener('click', mostrarQR);
-  document.getElementById('btn-equipo').addEventListener('click', function(){
-    var panel=document.getElementById('equipo-panel');
-    if(panel)panel.classList.toggle('show');
-    // Actualizar al abrir
-    if(panel&&panel.classList.contains('show')&&window.location.protocol!=='file:'){
-      fetch('/api/turno').then(function(r){return r.json();}).then(function(d){if(d.ok)renderEquipoApp(d.empleados);}).catch(function(){});
-    }
-  });
-  // Cerrar panel equipo al click fuera
-  document.addEventListener('click',function(e){
-    var panel=document.getElementById('equipo-panel');
-    var btn=document.getElementById('btn-equipo');
-    if(panel&&panel.classList.contains('show')&&!panel.contains(e.target)&&e.target!==btn&&!btn.contains(e.target)){
-      panel.classList.remove('show');
-    }
-  });
+
   document.getElementById('btn-goto-cierre').addEventListener('click', function(){showTab('cierre');});
 
   // CAJA
@@ -1926,7 +2264,7 @@ function pollServidor(){
             var enCoc=cocina.find(function(c){return c.mesa===dom.label;});
             if(!enCoc){
               comNum++;
-              var cItems=dom.items.map(function(it){return{id:it.id,item:{name:it.name,price:it.price},qty:it.qty,listo:false};});
+              var cItems=dom.items.map(function(it){return{id:it.id,item:{name:it.name,price:it.price},qty:it.qty,listo:false,specs:it.specs||[]};});
               cocina.push({id:comNum,mesa:dom.label,hora:dom.hora,timestamp:Date.now(),items:cItems,cobrado:false,esDom:true});
               updateCbadge();
             }

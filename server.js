@@ -6,10 +6,19 @@ const PORT = process.env.PORT || 3000;
 
 // ── Estado global ────────────────────────────────────────────────
 let turno = {
-  id:        null,       // fecha YYYY-MM-DD
-  abierto:   false,
-  domicilios:[],
-  domNum:    0
+  id:          null,
+  abierto:     false,
+  domicilios:  [],
+  domNum:      0,
+  // Estado completo del POS
+  salesLog:       [],
+  salesByProduct: {},
+  cobroNum:       0,
+  comNum:         0,
+  cocina:         [],
+  orders:         {},
+  gastos:         [],
+  gastoNum:       0
 };
 
 // Empleados: { id: { nombre, rol, entrada, salida, activo, ultima } }
@@ -91,8 +100,16 @@ const server = http.createServer((req, res) => {
         fecha:   turno.id || hoy(),
         domNum:  turno.domNum
       },
-      empleados: empleados,
-      domicilios: turno.domicilios
+      empleados:      empleados,
+      domicilios:     turno.domicilios,
+      salesLog:       turno.salesLog,
+      salesByProduct: turno.salesByProduct,
+      cobroNum:       turno.cobroNum,
+      comNum:         turno.comNum,
+      cocina:         turno.cocina,
+      orders:         turno.orders,
+      gastos:         turno.gastos,
+      gastoNum:       turno.gastoNum
     });
     return;
   }
@@ -201,17 +218,28 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // ── POST /api/sync — sincronizar estados de domicilios ────────
+  // ── POST /api/sync — sincronizar estado completo del POS ──────
   if (url === '/api/sync' && method === 'POST') {
     body(req, b => {
       try {
         const d = JSON.parse(b || '{}');
+        // Sincronizar domicilios
         if (d.domicilios && Array.isArray(d.domicilios)) {
           d.domicilios.forEach(dom => {
             const idx = turno.domicilios.findIndex(x => x.id === dom.id);
             if (idx >= 0) turno.domicilios[idx].estado = dom.estado;
+            else turno.domicilios.push(dom);
           });
         }
+        // Guardar estado completo del turno
+        if (d.salesLog    !== undefined) turno.salesLog       = d.salesLog;
+        if (d.salesByProduct !== undefined) turno.salesByProduct = d.salesByProduct;
+        if (d.cobroNum    !== undefined) turno.cobroNum       = d.cobroNum;
+        if (d.comNum      !== undefined) turno.comNum         = d.comNum;
+        if (d.cocina      !== undefined) turno.cocina         = d.cocina;
+        if (d.orders      !== undefined) turno.orders         = d.orders;
+        if (d.gastos      !== undefined) turno.gastos         = d.gastos;
+        if (d.gastoNum    !== undefined) turno.gastoNum       = d.gastoNum;
         json(res, 200, { ok: true });
       } catch(e) {
         json(res, 500, { ok: false, error: e.message });
@@ -223,10 +251,19 @@ const server = http.createServer((req, res) => {
   // ── POST /api/reset — limpiar domicilios al cerrar turno ──────
   if (url === '/api/reset' && method === 'POST') {
     body(req, b => {
-      turno.domicilios = [];
-      turno.domNum     = 0;
-      turno.id         = hoy();
-      console.log('🔄 Domicilios limpiados');
+      turno.domicilios    = [];
+      turno.domNum        = 0;
+      turno.salesLog      = [];
+      turno.salesByProduct= {};
+      turno.cobroNum      = 0;
+      turno.comNum        = 0;
+      turno.cocina        = [];
+      turno.orders        = {};
+      turno.gastos        = [];
+      turno.gastoNum      = 0;
+      turno.id            = hoy();
+      turno.abierto       = false;
+      console.log('🔄 Turno reseteado completamente');
       json(res, 200, { ok: true, turnoId: turno.id });
     });
     return;
