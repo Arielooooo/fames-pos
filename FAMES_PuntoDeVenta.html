@@ -1702,7 +1702,13 @@ function ejecutarCierreSesion(esCierre){
         method:'POST',
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify(turnoGuardar)
-      }).catch(function(){});
+      })
+      .then(function(r){return r.json();})
+      .then(function(d){
+        if(d.ok) console.log('✅ Turno guardado en servidor');
+        else console.error('❌ Error guardando turno:', d.error);
+      })
+      .catch(function(e){ console.error('❌ Error fetch historial:', e.message); });
     }
   }
   // Limpiar estado en el servidor si es cierre total
@@ -1747,6 +1753,26 @@ function ejecutarCierreSesion(esCierre){
 }
 
 function renderHistorial(){
+  var el=document.getElementById('hist-lista');if(!el)return;
+  // Siempre cargar del servidor primero
+  if(window.location.protocol!=='file:'){
+    fetch('/api/historial')
+      .then(function(r){return r.json();})
+      .then(function(d){
+        if(d.ok && d.historialTurnos && d.historialTurnos.length){
+          historialTurnos = d.historialTurnos;
+          renderHistorialLocal();
+        } else {
+          renderHistorialLocal();
+        }
+      })
+      .catch(function(){ renderHistorialLocal(); });
+  } else {
+    renderHistorialLocal();
+  }
+}
+
+function renderHistorialLocal(){
   var el=document.getElementById('hist-lista');if(!el)return;
   if(!historialTurnos.length){
     el.innerHTML='<p style="font-size:12px;color:var(--gris-texto);">Sin turnos cerrados aún.</p>';
