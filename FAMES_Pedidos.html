@@ -72,6 +72,26 @@ header{background:var(--gris);border-bottom:1px solid var(--borde);padding:14px 
 .confirm-sub{font-size:13px;color:var(--texto);line-height:1.7;}
 .confirm-id{font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--naranja);margin:10px 0;}
 .btn-nuevo{margin-top:16px;width:100%;padding:10px;border-radius:8px;border:1px solid var(--naranja);background:transparent;color:var(--naranja);font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:2px;cursor:pointer;}
+
+  /* MODAL PERSONALIZACIÓN */
+  .custom-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);display:flex;align-items:flex-end;z-index:300;}
+  .custom-panel{background:#1C1C1C;border-radius:16px 16px 0 0;width:100%;max-height:85vh;display:flex;flex-direction:column;}
+  .custom-header{padding:14px 18px;border-bottom:1px solid #333;display:flex;justify-content:space-between;align-items:center;}
+  .custom-title{font-size:15px;font-weight:600;color:#F5F5F0;}
+  .custom-sub{font-size:11px;color:#888;margin-top:2px;}
+  .custom-body{flex:1;overflow-y:auto;padding:12px 16px;}
+  .ing-label{font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;display:block;}
+  .ing-list{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
+  .ing-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;background:#242424;border:1px solid #333;cursor:pointer;}
+  .ing-item.quitado{opacity:.4;background:transparent;border-color:transparent;text-decoration:line-through;}
+  .ing-check{width:18px;height:18px;border-radius:4px;border:2px solid #555;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;transition:all .15s;}
+  .ing-check.checked{background:#1D9E75;border-color:#1D9E75;color:white;}
+  .ing-name{flex:1;font-size:13px;color:#F5F5F0;}
+  .notas-inp{width:100%;background:#242424;border:1px solid #333;border-radius:8px;color:#F5F5F0;font-size:13px;padding:10px 12px;font-family:'DM Sans',sans-serif;resize:none;}
+  .notas-inp:focus{outline:none;border-color:#F47C20;}
+  .custom-footer{padding:12px 16px;border-top:1px solid #333;background:#111;}
+  .btn-custom-add{width:100%;padding:13px;border-radius:9px;border:none;background:#1D9E75;color:white;font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:3px;cursor:pointer;}
+  .btn-custom-add:hover{background:#0F6E56;}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(10px);background:var(--verde);color:white;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:500;opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;z-index:999;}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 .toast.err{background:var(--rojo);}
@@ -91,6 +111,29 @@ header{background:var(--gris);border-bottom:1px solid var(--borde);padding:14px 
 
 <div class="sec-tabs" id="sec-tabs"></div>
 <div id="menu-container"></div>
+
+
+<!-- MODAL PERSONALIZACIÓN -->
+<div class="custom-overlay" id="custom-overlay" style="display:none;">
+  <div class="custom-panel">
+    <div class="custom-header">
+      <div>
+        <div class="custom-title" id="custom-title">Personalizar</div>
+        <div class="custom-sub">Toca para quitar un ingrediente</div>
+      </div>
+      <button style="background:transparent;border:none;color:#888;font-size:20px;cursor:pointer;" id="custom-close">✕</button>
+    </div>
+    <div class="custom-body">
+      <span class="ing-label">Ingredientes</span>
+      <div class="ing-list" id="ing-list"></div>
+      <span class="ing-label">¿Algo más que quieras decirle a la cocina?</span>
+      <textarea class="notas-inp" id="custom-notas-cliente" rows="2" placeholder="Ej: muy bien cocida, poca sal..."></textarea>
+    </div>
+    <div class="custom-footer">
+      <button class="btn-custom-add" id="custom-add-btn">AGREGAR AL CARRITO</button>
+    </div>
+  </div>
+</div>
 
 <!-- CARRITO -->
 <div class="cart-overlay" id="cart-overlay">
@@ -194,6 +237,87 @@ var MENU = {
   ]}
 };
 
+
+var RECETAS_CLIENTE = {
+  bu1:['Pan','Mayonesa','Catsup','Res','Queso amarillo','Lechuga','Jitomate','Cebolla caramelizada'],
+  bu2:['Pan','Mayonesa','Catsup','Res','Jamón','Piña','Queso oaxaca','Lechuga','Jitomate','Cebolla caramelizada'],
+  bu3:['Pan','Mayonesa','Catsup','Res','Tocino','Queso amarillo','Lechuga','Jitomate','Cebolla caramelizada'],
+  bu4:['Pan','Mayonesa','Catsup','Res','Salchichas','Queso oaxaca','Lechuga','Jitomate','Cebolla caramelizada'],
+  bu5:['Pan','Mayonesa','Catsup','Res','Queso oaxaca','Queso manchego','Queso amarillo','Lechuga','Jitomate','Cebolla caramelizada'],
+  es1:['Pan','Mayonesa','Catsup','Res','Queso manchego','Chorizo argentino','Chimichurri','Lechuga','Jitomate','Cebolla caramelizada'],
+  es2:['Pan','Mayonesa','Catsup','Res','Queso oaxaca','Aguacate','Longaniza','Lechuga','Jitomate','Cebolla caramelizada'],
+  es3:['Pan','Mayonesa','Catsup','Doble res','Doble queso amarillo','Lechuga','Jitomate','Cebolla caramelizada'],
+  es4:['Pan','Mayonesa','Catsup','Res','Salchicha','Queso oaxaca','Tocino','BBQ','Lechuga','Jitomate','Cebolla caramelizada'],
+  es5:['Pan','Mayonesa','Catsup','Tenders de pollo','Queso manchego','Lechuga','Jitomate','Cebolla caramelizada'],
+  es6:['Pan','Mayonesa','Catsup','Res','Queso oaxaca','Dedos de queso','Lechuga','Jitomate','Cebolla caramelizada'],
+  es7:['Pan','Mayonesa','Catsup','Res','Queso amarillo','Boneless','Lechuga','Jitomate','Cebolla caramelizada'],
+  jo1:['Pan jocho','Salchichas','Tocino','Queso manchego','Jitomate','Cebolla caramelizada','Mayonesa'],
+  jo2:['Pan 1/4 libra','Salchicha 1/4 libra','Tocino','Queso manchego','Jitomate','Cebolla caramelizada','Mayonesa'],
+  jo3:['Bolillo','Chorizo argentino','Queso manchego','Chimichurri','Pepinillos','Jitomate','Cebolla caramelizada','Mayonesa','Lechuga']
+};
+
+// ===== PERSONALIZACIÓN =====
+var _customId = null;
+var _customIngs = [];
+
+function abrirCustom(id){
+  var item = findItem(id);
+  if(!item) return;
+  var ings = RECETAS_CLIENTE[id] || [];
+  if(!ings.length){ addToCart(id); return; }
+
+  _customId = id;
+  _customIngs = ings.map(function(n){ return {name:n, incluido:true}; });
+
+  document.getElementById('custom-title').textContent = item.name + ' — $' + item.price;
+  var lista = document.getElementById('ing-list');
+  lista.innerHTML = _customIngs.map(function(ing, i){
+    return '<div class="ing-item" data-idx="'+i+'">'
+      +'<div class="ing-check checked" id="chk-'+i+'">✓</div>'
+      +'<span class="ing-name">'+ing.name+'</span>'
+      +'</div>';
+  }).join('');
+
+  lista.querySelectorAll('.ing-item').forEach(function(el){
+    el.addEventListener('click', function(){
+      var idx = parseInt(this.getAttribute('data-idx'));
+      _customIngs[idx].incluido = !_customIngs[idx].incluido;
+      var chk = document.getElementById('chk-'+idx);
+      if(_customIngs[idx].incluido){
+        chk.className='ing-check checked'; chk.textContent='✓';
+        this.classList.remove('quitado');
+      } else {
+        chk.className='ing-check'; chk.textContent='';
+        this.classList.add('quitado');
+      }
+    });
+  });
+
+  var notasEl = document.getElementById('custom-notas-cliente');
+  if(notasEl) notasEl.value = '';
+  document.getElementById('custom-overlay').style.display='flex';
+}
+
+function confirmarCustom(){
+  var item = findItem(_customId);
+  if(!item) return;
+  var quitados = _customIngs.filter(function(i){return !i.incluido;}).map(function(i){return 'Sin '+i.name.toLowerCase();});
+  var notas = document.getElementById('custom-notas-cliente').value.trim();
+  var specs = [];
+  if(quitados.length) specs = specs.concat(quitados);
+  if(notas) specs.push(notas);
+
+  if(!carrito[_customId]) carrito[_customId]={item:item,qty:0,specs:[]};
+  carrito[_customId].qty++;
+  if(!carrito[_customId].specs) carrito[_customId].specs=[];
+  if(specs.length) carrito[_customId].specs.push(specs.join(' · '));
+
+  document.getElementById('custom-overlay').style.display='none';
+  updateCartUI();
+  showToast('+'+item.name+(specs.length?' (personalizado)':''),'ok');
+  _customId=null;
+}
+
 var carrito = {};
 var pagoPedido = 'efectivo';
 var toastTimer = null;
@@ -276,7 +400,8 @@ function updateCartUI(){
   if(!keys.length){el.innerHTML='<div class="cart-empty">Tu carrito está vacío</div>';return;}
   el.innerHTML=keys.map(function(id){
     var c=carrito[id],s=c.item.price*c.qty;
-    return '<div class="cart-row"><span class="cart-name">'+c.item.name+'</span>'
+    var specsStr=c.specs&&c.specs.length?'<div style="font-size:10px;color:#F47C20;margin-top:1px;">'+c.specs.join(' · ')+'</div>':'';
+    return '<div class="cart-row" style="flex-wrap:wrap;"><div style="flex:1;min-width:0;"><span class="cart-name">'+c.item.name+'</span>'+specsStr+'</div>'
       +'<div class="qctrl">'
       +'<button class="qbtn" data-id="'+id+'" data-d="-1">−</button>'
       +'<span class="qnum">'+c.qty+'</span>'
@@ -316,7 +441,7 @@ function enviarPedido(){
   if(!keys.length){showToast('Agrega productos al carrito primero','err');return;}
 
   var items=[],total=0;
-  keys.forEach(function(id){var c=carrito[id];items.push({id:id,name:c.item.name,price:c.item.price,qty:c.qty});total+=c.item.price*c.qty;});
+  keys.forEach(function(id){var c=carrito[id];items.push({id:id,name:c.item.name,price:c.item.price,qty:c.qty,specs:c.specs||[]});total+=c.item.price*c.qty;});
 
   var pedido={
     nombre:nombre,tel:tel,
@@ -329,31 +454,51 @@ function enviarPedido(){
   var btn=document.getElementById('btn-pedir');
   btn.disabled=true;btn.textContent='ENVIANDO...';
 
-  // Usar URL absoluta para evitar problemas con proxies de Railway
-  var apiUrl=window.location.origin+'/api/pedido-online';
-
-  fetch(apiUrl,{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify(pedido)
-  })
-  .then(function(r){
-    if(!r.ok)throw new Error('HTTP '+r.status);
-    return r.json();
-  })
-  .then(function(data){
-    if(!data.ok)throw new Error(data.error||'Error del servidor');
-    document.getElementById('confirm-id').textContent=data.id||'DOM-1';
+  function mostrarConfirmacion(id){
+    document.getElementById('confirm-id').textContent=id||'DOM-1';
     document.getElementById('confirm-overlay').classList.add('show');
     document.getElementById('cart-overlay').classList.remove('show');
     carrito={};updateCartUI();
     btn.disabled=false;btn.textContent='ENVIAR PEDIDO';
-  })
-  .catch(function(e){
-    console.error('Error pedido:',e);
-    showToast('No se pudo enviar: '+e.message,'err');
-    btn.disabled=false;btn.textContent='ENVIAR PEDIDO';
-  });
+  }
+
+  var intentos=0;
+
+  function intentarEnvio(){
+    intentos++;
+    var xhr=new XMLHttpRequest();
+    xhr.open('POST', '/api/pedido-online', true);
+    xhr.setRequestHeader('Content-Type','application/json');
+    xhr.timeout=10000;
+    xhr.onload=function(){
+      try{
+        var data=JSON.parse(xhr.responseText);
+        if(data.ok){
+          mostrarConfirmacion(data.id);
+        } else {
+          throw new Error(data.error||'Error del servidor');
+        }
+      }catch(e){
+        manejarError(e.message);
+      }
+    };
+    xhr.onerror=function(){ manejarError('Sin conexión'); };
+    xhr.ontimeout=function(){ manejarError('Tiempo agotado'); };
+    xhr.send(JSON.stringify(pedido));
+  }
+
+  function manejarError(msg){
+    console.error('Intento '+intentos+' fallido:',msg);
+    if(intentos<3){
+      btn.textContent='REINTENTANDO...';
+      setTimeout(intentarEnvio,2000);
+    } else {
+      showToast('No se pudo enviar. Intenta de nuevo.','err');
+      btn.disabled=false;btn.textContent='ENVIAR PEDIDO';
+    }
+  }
+
+  intentarEnvio();
 }
 
 document.addEventListener('DOMContentLoaded',function(){
@@ -362,6 +507,13 @@ document.addEventListener('DOMContentLoaded',function(){
   document.getElementById('cart-close').addEventListener('click',function(){document.getElementById('cart-overlay').classList.remove('show');});
   document.getElementById('cart-overlay').addEventListener('click',function(e){if(e.target===this)this.classList.remove('show');});
   document.getElementById('btn-pedir').addEventListener('click',enviarPedido);
+  document.getElementById('custom-add-btn').addEventListener('click', confirmarCustom);
+  document.getElementById('custom-close').addEventListener('click', function(){
+    document.getElementById('custom-overlay').style.display='none'; _customId=null;
+  });
+  document.getElementById('custom-overlay').addEventListener('click', function(e){
+    if(e.target===this){ this.style.display='none'; _customId=null; }
+  });
   document.getElementById('tipo-dom').addEventListener('click',function(){selTipo('domicilio');});
   document.getElementById('tipo-rec').addEventListener('click',function(){selTipo('recoger');});
   document.getElementById('btn-nuevo-pedido').addEventListener('click',function(){document.getElementById('confirm-overlay').classList.remove('show');});
