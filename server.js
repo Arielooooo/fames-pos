@@ -260,7 +260,7 @@ const server = http.createServer((req, res) => {
         if (d.salesByProduct !== undefined) turno.salesByProduct = d.salesByProduct;
         if (d.cobroNum       !== undefined) turno.cobroNum       = d.cobroNum;
         if (d.comNum         !== undefined) turno.comNum         = d.comNum;
-        if (d.cocina         !== undefined) turno.cocina         = d.cocina;
+        if (d.cocina !== undefined) turno.cocina = d.cocina.filter(c => !c.cobrado);
         if (d.orders         !== undefined) turno.orders         = d.orders;
         if (d.gastos         !== undefined) turno.gastos         = d.gastos;
         if (d.gastoNum       !== undefined) turno.gastoNum       = d.gastoNum;
@@ -321,11 +321,14 @@ const server = http.createServer((req, res) => {
   // POST /api/reset — cierre de turno
   if (url === '/api/reset' && method === 'POST') {
     body(req, b => {
+      const fechaHoy = hoy();
       turno = estadoDefault().turno;
-      turno.id = hoy();
+      turno.id      = fechaHoy;
+      turno.abierto = false;
+      empleados     = {};
       guardarEstado();
-      console.log('Turno reseteado');
-      json(res, 200, { ok: true, turnoId: turno.id });
+      console.log('✅ Turno reseteado completamente —', fechaHoy);
+      json(res, 200, { ok: true, turnoId: fechaHoy });
     });
     return;
   }

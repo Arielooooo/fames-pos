@@ -944,19 +944,25 @@ function iniciarPing(){
 function abrirApp(estadoServidor){
   // Restaurar estado del turno desde el servidor
   if(estadoServidor && estadoServidor.ok){
-    // /api/turno devuelve los datos directamente en el root
-    if(estadoServidor.salesLog&&estadoServidor.salesLog.length)     salesLog       = estadoServidor.salesLog;
-    if(estadoServidor.salesByProduct&&Object.keys(estadoServidor.salesByProduct).length) salesByProduct = estadoServidor.salesByProduct;
-    if(estadoServidor.cobroNum)                                      cobroNum       = estadoServidor.cobroNum;
-    if(estadoServidor.comNum)                                        comNum         = estadoServidor.comNum;
-    if(estadoServidor.cocina&&estadoServidor.cocina.length)          cocina         = estadoServidor.cocina;
-    if(estadoServidor.orders&&Object.keys(estadoServidor.orders).length) orders    = estadoServidor.orders;
-    if(estadoServidor.gastos&&estadoServidor.gastos.length)          gastos         = estadoServidor.gastos;
-    if(estadoServidor.gastoNum)                                      gastoNum       = estadoServidor.gastoNum;
-    if(estadoServidor.domicilios&&estadoServidor.domicilios.length)  domicilios     = estadoServidor.domicilios;
-    if(estadoServidor.turno&&estadoServidor.turno.domNum)            domNum         = estadoServidor.turno.domNum;
+    var fechaServidor = estadoServidor.turno ? estadoServidor.turno.fecha : null;
+    var esNuevoDia = fechaServidor && fechaServidor !== getHoy();
+
+    // Solo restaurar si es el mismo día — si es nuevo día, empezar limpio
+    if(!esNuevoDia){
+      if(estadoServidor.salesLog&&estadoServidor.salesLog.length)     salesLog       = estadoServidor.salesLog;
+      if(estadoServidor.salesByProduct&&Object.keys(estadoServidor.salesByProduct).length) salesByProduct = estadoServidor.salesByProduct;
+      if(estadoServidor.cobroNum)                                      cobroNum       = estadoServidor.cobroNum;
+      if(estadoServidor.comNum)                                        comNum         = estadoServidor.comNum;
+      // Solo restaurar comandas NO cobradas
+      if(estadoServidor.cocina&&estadoServidor.cocina.length)          cocina = estadoServidor.cocina.filter(function(c){return !c.cobrado;});
+      if(estadoServidor.orders&&Object.keys(estadoServidor.orders).length) orders = estadoServidor.orders;
+      if(estadoServidor.gastos&&estadoServidor.gastos.length)          gastos         = estadoServidor.gastos;
+      if(estadoServidor.gastoNum)                                      gastoNum       = estadoServidor.gastoNum;
+      if(estadoServidor.domicilios&&estadoServidor.domicilios.length)  domicilios     = estadoServidor.domicilios.filter(function(d){return d.estado!=='entregado';});
+      if(estadoServidor.turno&&estadoServidor.turno.domNum)            domNum         = estadoServidor.turno.domNum;
+    }
     ultimoDomNum = estadoServidor.turno ? estadoServidor.turno.domNum||0 : 0;
-    // Restaurar historial de turnos
+    // Restaurar historial de turnos siempre
     if(estadoServidor.historialTurnos&&estadoServidor.historialTurnos.length){
       historialTurnos = estadoServidor.historialTurnos;
     }
@@ -2316,9 +2322,9 @@ function pollServidor(){
       if(!turnoActivo) return;
       var huboComandaNueva = false;
 
-      // Sincronizar cocina — agregar comandas nuevas del servidor
+      // Sincronizar cocina — solo comandas NO cobradas
       if(data.cocina && data.cocina.length){
-        data.cocina.forEach(function(comServ){
+        data.cocina.filter(function(c){return !c.cobrado;}).forEach(function(comServ){
           var existe = cocina.find(function(c){ return c.id === comServ.id; });
           if(!existe){
             cocina.push(comServ);
