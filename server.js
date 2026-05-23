@@ -223,15 +223,20 @@ const server = http.createServer((req, res) => {
     body(req, b => {
       try {
         const d = JSON.parse(b || '{}');
+        // Asegurar que el turno está abierto
+        if (!turno.abierto) {
+          turno.abierto = true;
+          turno.id = turno.id || hoy();
+        }
         // Sincronizar domicilios
         if (d.domicilios && Array.isArray(d.domicilios)) {
           d.domicilios.forEach(dom => {
             const idx = turno.domicilios.findIndex(x => x.id === dom.id);
             if (idx >= 0) turno.domicilios[idx].estado = dom.estado;
-            else turno.domicilios.push(dom);
+            else if (dom.id) turno.domicilios.push(dom);
           });
         }
-        // Guardar estado completo del turno
+        // Guardar estado — solo si tiene datos reales
         if (d.salesLog    !== undefined) turno.salesLog       = d.salesLog;
         if (d.salesByProduct !== undefined) turno.salesByProduct = d.salesByProduct;
         if (d.cobroNum    !== undefined) turno.cobroNum       = d.cobroNum;
@@ -240,8 +245,11 @@ const server = http.createServer((req, res) => {
         if (d.orders      !== undefined) turno.orders         = d.orders;
         if (d.gastos      !== undefined) turno.gastos         = d.gastos;
         if (d.gastoNum    !== undefined) turno.gastoNum       = d.gastoNum;
+        console.log('Sync: '+turno.salesLog.length+' ventas, $'+
+          turno.salesLog.reduce(function(a,s){return a+(s.total||0);},0).toFixed(2));
         json(res, 200, { ok: true });
       } catch(e) {
+        console.error('Sync error:', e.message);
         json(res, 500, { ok: false, error: e.message });
       }
     });

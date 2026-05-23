@@ -1182,7 +1182,7 @@ function confirmarCobro(){
   }
   cerrarModal('m-cobro');
   sonarCobro();
-  setTimeout(syncEstado, 500);
+  syncEstado();
   showToast('✓ Cobro #'+cobroNum+' $'+total.toFixed(2),'ok');
   if(alertas.length)setTimeout(function(){showToast('⚠ Stock bajo: '+alertas.slice(0,2).join(', '),'warn');sonarAlerta();},2800);
   mostrarTicket({num:cobroNum,mesa:mesa,items:items,subtotal:sub,propina:prop,total:total,pago:metodoPago,hora:hora,fecha:getHoy()});
@@ -1198,7 +1198,7 @@ function enviarCocina(){
   comNum++;var hora=getNow();
   var items=keys.map(function(id){return{id:id,item:o[id].item,qty:o[id].qty,listo:false,specs:o[id].specs||[]};});
   cocina.push({id:comNum,mesa:currentTable,hora:hora,timestamp:Date.now(),items:items,cobrado:false});
-  updateCbadge();sonarCocina();showToast('📋 Comanda #'+comNum+' enviada','ok');
+  updateCbadge();sonarCocina();syncEstado();showToast('📋 Comanda #'+comNum+' enviada','ok');
 }
 
 function updateCbadge(){
@@ -1380,6 +1380,7 @@ function cambiarEstadoDom(id,estado){
     sonarCobro();showToast('✓ '+dom.label+' entregado $'+dom.total.toFixed(2),'ok');
   }
   renderDomicilios();
+  syncEstado();
 }
 
 // ============================================================
@@ -1486,7 +1487,7 @@ function agregarGasto(){
   gastoNum++;
   gastos.push({id:gastoNum,desc:desc,monto:monto,categoria:catGasto.nombre,emoji:catGasto.emoji,notas:notas,hora:getNow()});
   ['g-desc','g-monto','g-notas'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});
-  renderCaja();showToast('Gasto $'+monto.toFixed(2)+' registrado','ok');
+  renderCaja();syncEstado();showToast('Gasto $'+monto.toFixed(2)+' registrado','ok');
 }
 
 // ============================================================
