@@ -646,7 +646,9 @@ var MENU = {
     {id:'sn3',name:'Papas monster',price:80,desc:'250gr + chorizo'},
     {id:'sn4',name:'Bonneles con papas',price:100,desc:'280g boneless + 100g francesa'},
     {id:'sn5',name:'Dedos de queso',price:70,desc:'5pz + 100g francesa'},
-    {id:'sn6',name:'Salchi-Pulpos',price:60,desc:'3 salchichas + 100g francesa'}
+    {id:'sn6',name:'Salchi-Pulpos',price:60,desc:'3 salchichas + 100g francesa'},
+    {id:'sn7',name:'Chiquicomo',price:100,desc:'Elige: dedos/nuggets/salchipulpos + jugo Pau + huevo Kinder + 100g francesa'},
+    {id:'sn8',name:'Dedos flamin',price:80,desc:'5pz dedos flamin + 100g francesa'}
   ],
   alitas:[
     {id:'al1',name:'Alitas',price:80,desc:'6pz + 100g francesa'},
@@ -690,9 +692,21 @@ var RECETAS = {
   sn4:[{inv:'Boneless (g)',qty:280},{inv:'Papas francesa (g)',qty:100}],
   sn5:[{inv:'Dedos de queso',qty:5},{inv:'Papas francesa (g)',qty:100}],
   sn6:[{inv:'Salchichas',qty:3},{inv:'Papas francesa (g)',qty:100}],
+  sn7:[{inv:'Jugo Pau',qty:1},{inv:'Huevo Kinder',qty:1},{inv:'Papas francesa (g)',qty:100}],
+  sn8:[{inv:'Dedos flamin',qty:5},{inv:'Papas francesa (g)',qty:100}],
   al1:[{inv:'Alitas',qty:6},{inv:'Papas francesa (g)',qty:100},{inv:'Limón (mitades)',qty:1}],
   al2:[{inv:'Costillas',qty:6},{inv:'Papas francesa (g)',qty:100},{inv:'Limón (mitades)',qty:1}],
-  be1:[{inv:'Coca Cola',qty:1}],be2:[{inv:'Boing',qty:1}],be3:[{inv:'Vaso 500ml',qty:1}],
+  be1:[{inv:'Coca Cola',qty:1}],
+  be2:[{inv:'Boing',qty:1}],
+  be3:[{inv:'Vaso 500ml',qty:1}],
+  be4:[{inv:'Vaso 500ml',qty:1},{inv:'Limón (mitades)',qty:2},{inv:'Hielos',qty:1},{inv:'Sal',qty:1}],
+  be5:[{inv:'Vaso 500ml',qty:1},{inv:'Naranja (pzas)',qty:1},{inv:'Limón (mitades)',qty:1},{inv:'Hielos',qty:1},{inv:'Sal',qty:1}],
+  be6:[{inv:'Hielos',qty:1},{inv:'Canela en polvo',qty:1}],
+  be7:[{inv:'Vaso 500ml',qty:1},{inv:'Hielos',qty:1},{inv:'Canela en polvo',qty:1}],
+  be8:[{inv:'Hielos',qty:1}],
+  be9:[{inv:'Vaso 500ml',qty:1},{inv:'Hielos',qty:1}],
+  be10:[{inv:'Vaso 500ml',qty:1}],
+  be11:[{inv:'Vaso 500ml',qty:1},{inv:'Leche',qty:0.25},{inv:'Hielos',qty:1}],
   dr1:[{inv:'Caguama',qty:1}],dr2:[{inv:'Caguama',qty:1},{inv:'Vaso cervecero',qty:1}],
   dr3:[{inv:'Ron blanco (ml)',qty:50},{inv:'Limón (mitades)',qty:2},{inv:'Azúcar (g)',qty:10},{inv:'Hierbabuena (hojas)',qty:6},{inv:'Agua mineral (ml)',qty:200}],
   dr4:[{inv:'Vodka (ml)',qty:50},{inv:'Blue Curaçao (ml)',qty:30},{inv:'Agua mineral (ml)',qty:100},{inv:'Limón (mitades)',qty:2}]
@@ -766,7 +780,15 @@ var INV=[
   {name:'Crema batida',ap:500,stock:500,unit:'ml',min:100},
   {name:'Hersheys',ap:200,stock:200,unit:'g',min:50},
   {name:'Preparado miches',ap:300,stock:300,unit:'g',min:50},
-  {name:'Carbón',ap:10,stock:10,unit:'kg',min:2}
+  {name:'Carbón',ap:10,stock:10,unit:'kg',min:2},
+  {name:'Hielos',ap:5,stock:5,unit:'bolsas',min:1},
+  {name:'Naranja (pzas)',ap:20,stock:20,unit:'pzas',min:5},
+  {name:'Jugo Pau',ap:20,stock:20,unit:'pzas',min:5},
+  {name:'Huevo Kinder',ap:20,stock:20,unit:'pzas',min:5},
+  {name:'Dedos flamin',ap:30,stock:30,unit:'pzas',min:10},
+  {name:'Nuggets',ap:30,stock:30,unit:'pzas',min:10},
+  {name:'Horchata (lt)',ap:5,stock:5,unit:'lt',min:1},
+  {name:'Jamaica (lt)',ap:5,stock:5,unit:'lt',min:1}
 ];
 
 // ============================================================
@@ -2018,13 +2040,20 @@ function abrirCustom(itemId){
   var item = findItem(itemId);
   if(!item){ addItem(itemId); return; }
 
+  // Caso especial: Chiquicomo — elegir entre 3 opciones
+  if(itemId === 'sn7'){
+    abrirCustomChiquicomo();
+    return;
+  }
+
   // Obtener ingredientes de la receta
   var receta = RECETAS[itemId] || [];
 
   // Ingredientes que no son empaque/papel (los que ve el cliente)
+  var OCULTAR = ['papel','bolsa','contenedor','vaso','servilleta','popote','empaque'];
   var ingredientesFiltrados = receta.filter(function(r){
     var nombre = r.inv.toLowerCase();
-    return nombre.indexOf('papel') < 0 && nombre.indexOf('bolsa') < 0 && nombre.indexOf('contenedor') < 0;
+    return !OCULTAR.some(function(o){ return nombre.indexOf(o) >= 0; });
   });
 
   if(!ingredientesFiltrados.length){
@@ -2069,6 +2098,61 @@ function abrirCustom(itemId){
 
   abrirModal('m-custom');
   setTimeout(function(){ var n=document.getElementById('custom-notas'); if(n)n.focus(); }, 200);
+}
+
+
+// ===== CHIQUICOMO — selección de opción =====
+var _chiquicomoOpcion = 'Dedos de queso';
+
+function abrirCustomChiquicomo(){
+  _chiquicomoOpcion = 'Dedos de queso';
+  var tituloEl = document.getElementById('custom-titulo');
+  if(tituloEl) tituloEl.textContent = 'Chiquicomo — Elige tu opción';
+
+  var el = document.getElementById('custom-ings');
+  if(el){
+    el.innerHTML = '<div style="font-size:11px;color:var(--gris-texto);margin-bottom:8px;">Elige el snack incluido:</div>'
+      + ['Dedos de queso','Nuggets','Salchi-Pulpos'].map(function(op){
+        var activo = op === _chiquicomoOpcion;
+        return '<div class="chiqui-op'+(activo?' selected':'')+'" data-op="'+op+'" style="'
+          +'display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;'
+          +'border:1px solid '+(activo?'var(--verde)':'var(--gris-borde)')+';'
+          +'background:'+(activo?'rgba(29,158,117,.1)':'var(--gris-panel)')+';'
+          +'cursor:pointer;margin-bottom:6px;">'
+          +'<div style="width:18px;height:18px;border-radius:50%;border:2px solid '+(activo?'var(--verde)':'var(--gris-borde)')+';'
+          +'background:'+(activo?'var(--verde)':'transparent')+';display:flex;align-items:center;justify-content:center;">'
+          +(activo?'<div style="width:8px;height:8px;border-radius:50%;background:white;"></div>':'')
+          +'</div>'
+          +'<span style="font-size:13px;font-weight:'+(activo?'600':'400')+';">'+op+'</span>'
+          +'</div>';
+      }).join('')
+      + '<div style="font-size:11px;color:var(--gris-texto);margin-top:8px;">Incluye: Jugo Pau + Huevo Kinder + 100g papas francesa</div>';
+
+    el.querySelectorAll('.chiqui-op').forEach(function(div){
+      div.addEventListener('click', function(){
+        _chiquicomoOpcion = this.getAttribute('data-op');
+        // Re-renderizar opciones
+        el.querySelectorAll('.chiqui-op').forEach(function(d){
+          var op = d.getAttribute('data-op');
+          var sel = op === _chiquicomoOpcion;
+          d.style.borderColor = sel ? 'var(--verde)' : 'var(--gris-borde)';
+          d.style.background  = sel ? 'rgba(29,158,117,.1)' : 'var(--gris-panel)';
+          var radio = d.querySelector('div');
+          if(radio){
+            radio.style.borderColor  = sel ? 'var(--verde)' : 'var(--gris-borde)';
+            radio.style.background   = sel ? 'var(--verde)' : 'transparent';
+            radio.innerHTML = sel ? '<div style="width:8px;height:8px;border-radius:50%;background:white;"></div>' : '';
+          }
+          var label = d.querySelector('span');
+          if(label) label.style.fontWeight = sel ? '600' : '400';
+        });
+      });
+    });
+  }
+
+  var notasEl = document.getElementById('custom-notas');
+  if(notasEl) notasEl.value = '';
+  abrirModal('m-custom');
 }
 
 function confirmarCustom(){
