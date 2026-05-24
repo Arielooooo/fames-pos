@@ -2365,19 +2365,22 @@ function iniciarSyncAuto(){
 
 function syncEstado(){
   if(!turnoActivo||window.location.protocol==='file:') return;
+  // Solo enviar comandas no cobradas al servidor
+  var cocinaActiva = cocina.filter(function(c){ return !c.cobrado; });
   fetch('/api/sync',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({
-      salesLog:salesLog,
-      salesByProduct:salesByProduct,
-      cobroNum:cobroNum,
-      comNum:comNum,
-      cocina:cocina,
-      orders:orders,
-      gastos:gastos,
-      gastoNum:gastoNum,
-      domicilios:domicilios
+      salesLog:     salesLog,
+      salesByProduct: salesByProduct,
+      cobroNum:     cobroNum,
+      comNum:       comNum,
+      cocina:       cocinaActiva,
+      cobradasIds:  cocina.filter(function(c){return c.cobrado;}).map(function(c){return c.id;}),
+      orders:       orders,
+      gastos:       gastos,
+      gastoNum:     gastoNum,
+      domicilios:   domicilios
     })
   }).catch(function(){});
 }
@@ -2568,111 +2571,100 @@ function pollServidor(){
     .then(function(r){ return r.json(); })
     .then(function(data){
       if(!data.ok) return;
+      mostrarEstadoRed(true);
+
       // Actualizar equipo
       if(data.empleados) renderEquipoApp(data.empleados);
+
       // Detectar pedido online nuevo
       var nuevoNum = data.turno ? data.turno.domNum||0 : 0;
       if(nuevoNum > ultimoDomNum && ultimoDomNum > 0){
         sonarOnline();
-        showToast('🛵 ¡Nuevo pedido online!','ok');
+        showToast('🛵 Nuevo pedido online!','ok');
       }
       ultimoDomNum = nuevoNum;
 
-      // ── Aplicar estado del servidor al local ──────────────────
-      if(!turnoActivo) return;
-      var huboComandaNueva = false;
+      // ── Sincronizar cocina ──────────────────────────────────
+      // El servidor es la fuente de verdad para comandas nuevas
+      if(data.cocina && Array.isArray(data.cocina)){
+        var huboNueva = false;
 
-      // Sincronizar cocina — solo comandas NO cobradas
-      if(data.cocina && data.cocina.length){
-        data.cocina.filter(function(c){return !c.cobrado;}).forEach(function(comServ){
-          var existe = cocina.find(function(c){ return c.id === comServ.id; });
-          if(!existe){
+        data.cocina.forEach(function(comServ){
+          // Ignorar cobradas
+          if(comServ.cobrado) return;
+
+          var local = cocina.find(function(c){ return c.id === comServ.id; });
+          if(!local){
+            // Comanda nueva del servidor — agregarla
             cocina.push(comServ);
-            huboComandaNueva = true;
+            huboNueva = true;
             updateCbadge();
-          } else {
-            // Actualizar estado listo de items
-            comServ.items.forEach(function(itServ, idx){
-              if(existe.items[idx] && itServ.listo && !existe.items[idx].listo){
-                existe.items[idx].listo = true;
+          } else if(!local.cobrado){
+            // Actualizar items listos desde servidor (otro dispositivo marcó listo)
+            comServ.items.forEach(function(itServ, i){
+              if(local.items[i] && itServ.listo && !local.items[i].listo){
+                local.items[i].listo = true;
               }
             });
-            // Si se cobró en otro dispositivo
-            if(comServ.cobrado && !existe.cobrado){
-              existe.cobrado = true;
+            // Si el servidor la marcó como cobrada
+            if(comServ.cobrado && !local.cobrado){
+              local.cobrado = true;
               updateCbadge();
             }
           }
         });
-      }
 
-      // Sincronizar ventas
-      if(data.salesLog && data.salesLog.length > salesLog.length){
-        salesLog = data.salesLog;
-        salesByProduct = data.salesByProduct || salesByProduct;
-        cobroNum = data.cobroNum || cobroNum;
-      }
-
-      // Sincronizar orders (pedidos por mesa)
-      if(data.orders){
-        Object.keys(data.orders).forEach(function(mesa){
-          if(!orders[mesa] || !Object.keys(orders[mesa]).length){
-            orders[mesa] = data.orders[mesa];
+        // Marcar como cobradas las que el servidor ya no tiene activas
+        var idsServidor = data.cocina.filter(function(c){return !c.cobrado;}).map(function(c){return c.id;});
+        cocina.forEach(function(local){
+          if(!local.cobrado && idsServidor.indexOf(local.id) < 0){
+            // El servidor no la tiene activa — fue cobrada desde otro dispositivo
+            local.cobrado = true;
+            updateCbadge();
           }
         });
-      }
 
-      // Notificar si llegó comanda nueva
-      if(huboComandaNueva){
-        var tcoc = document.getElementById('tab-cocina');
-        if(tcoc && tcoc.style.display !== 'none') renderCocina();
-        updateCbadge();
-        sonarCocina();
-        showToast('📋 Nueva comanda recibida','ok');
-      }
-
-      // Sincronizar domicilios
-      var d = {};
-      d.domicilios = data.domicilios||[];
-      // Solo procesar domicilios si hay turno activo
-      if(turnoActivo && turnoId && d.domicilios && d.domicilios.length){
-        var huboNuevo=false;
-        d.domicilios.forEach(function(dom){
-          var existe=domicilios.find(function(x){return x.id===dom.id;});
-          if(!existe){
-            domicilios.push(dom);huboNuevo=true;
-            var enCoc=cocina.find(function(c){return c.mesa===dom.label;});
-            if(!enCoc){
-              comNum++;
-              var cItems=dom.items.map(function(it){return{id:it.id,item:{name:it.name,price:it.price},qty:it.qty,listo:false,specs:it.specs||[]};});
-              cocina.push({id:comNum,mesa:dom.label,hora:dom.hora,timestamp:Date.now(),items:cItems,cobrado:false,esDom:true});
-              updateCbadge();
-            }
-          }
-        });
-        if(huboNuevo){
-          var tc=document.getElementById('tab-domicilios');
-          if(tc&&tc.style.display!=='none')try{renderDomicilios();}catch(e){}
-          var tco=document.getElementById('tab-cocina');
-          if(tco&&tco.style.display!=='none')try{renderCocina();}catch(e){}
+        if(huboNueva){
+          sonarCocina();
+          showToast('📋 Nueva comanda recibida','ok');
+          var tc = document.getElementById('tab-cocina');
+          if(tc && tc.style.display !== 'none') renderCocina();
+          updateCbadge();
         }
       }
-      mostrarEstadoRed(true);
+
+      // ── Sincronizar ventas ──────────────────────────────────
+      // Solo actualizar si el servidor tiene más ventas que local
+      if(data.salesLog && data.salesLog.length > salesLog.length){
+        salesLog       = data.salesLog;
+        salesByProduct = data.salesByProduct || salesByProduct;
+        cobroNum       = data.cobroNum       || cobroNum;
+      }
+
+      // ── Sincronizar domicilios ──────────────────────────────
+      if(data.domicilios && Array.isArray(data.domicilios)){
+        data.domicilios.forEach(function(domServ){
+          var local = domicilios.find(function(d){ return d.id === domServ.id; });
+          if(!local){
+            domicilios.push(domServ);
+          } else {
+            // Actualizar estado desde servidor
+            local.estado = domServ.estado;
+          }
+        });
+        var td = document.getElementById('tab-domicilios');
+        if(td && td.style.display !== 'none') renderDomicilios();
+      }
+
+      // ── Actualizar tab cocina si está visible ───────────────
+      var tc2 = document.getElementById('tab-cocina');
+      if(tc2 && tc2.style.display !== 'none') renderCocina();
     })
     .catch(function(){
       mostrarEstadoRed(false);
     });
 }
 
-function enviarEstado(){
-  // En modo polling el estado se sincroniza en el siguiente poll
-  // Solo subimos cambios críticos de domicilios al servidor
-  fetch(window.location.origin+'/api/sync',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({domicilios:domicilios})
-  }).catch(function(){});
-}
 
 function mostrarEstadoRed(ok){
   var el=document.getElementById('estado-red');

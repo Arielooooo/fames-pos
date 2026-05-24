@@ -257,12 +257,29 @@ const server = http.createServer((req, res) => {
         if (d.salesByProduct !== undefined) turno.salesByProduct = d.salesByProduct;
         if (d.cobroNum       !== undefined) turno.cobroNum       = d.cobroNum;
         if (d.comNum         !== undefined) turno.comNum         = d.comNum;
-        if (d.cocina         !== undefined) turno.cocina         = d.cocina.filter(c => !c.cobrado);
+        if (d.cocina !== undefined) {
+          // Mergear: agregar nuevas, actualizar existentes, respetar cobradas
+          d.cocina.filter(c => !c.cobrado).forEach(comNueva => {
+            const idx = turno.cocina.findIndex(c => c.id === comNueva.id);
+            if (idx < 0) {
+              turno.cocina.push(comNueva); // Nueva comanda
+            } else if (!turno.cocina[idx].cobrado) {
+              turno.cocina[idx] = comNueva; // Actualizar existente
+            }
+          });
+        }
         if (d.orders         !== undefined) turno.orders         = d.orders;
         if (d.gastos         !== undefined) turno.gastos         = d.gastos;
         if (d.gastoNum       !== undefined) turno.gastoNum       = d.gastoNum;
         await guardarEstado('turno', turno);
-        console.log('Sync: ' + turno.salesLog.length + ' ventas');
+        // Marcar como cobradas las que vinieron con cobrado=true
+        if (d.cobradasIds && Array.isArray(d.cobradasIds)) {
+          d.cobradasIds.forEach(cid => {
+            const idx = turno.cocina.findIndex(c => c.id === cid);
+            if (idx >= 0) turno.cocina[idx].cobrado = true;
+          });
+        }
+        console.log('Sync: ' + turno.salesLog.length + ' ventas, ' + turno.cocina.filter(c=>!c.cobrado).length + ' comandas activas');
         json(res, 200, { ok: true });
       } catch(e) { json(res, 500, { ok: false, error: e.message }); }
     });
