@@ -121,13 +121,16 @@ function pollServidor(){
       var serverDoms=data.domicilios||[];
       setRedDot(true, serverDoms.filter(function(d){return d.estado!=='entregado';}).length + ' pendientes');
       // Mergear: agregar nuevos, actualizar estados del servidor
+      var ORDEN = {pendiente:0, en_camino:1, entregado:2};
       serverDoms.forEach(function(sd){
         var local=domicilios.find(function(d){return d.id===sd.id;});
         if(!local){
-          domicilios.push(sd); // Nuevo domicilio del servidor
+          domicilios.push(sd);
         } else {
-          // Si el servidor tiene un estado más avanzado, actualizar
-          if(sd.estado==='entregado') local.estado='entregado';
+          // Respetar siempre el estado más avanzado
+          var eActual = ORDEN[local.estado]||0;
+          var eServ   = ORDEN[sd.estado]||0;
+          if(eServ > eActual) local.estado = sd.estado;
         }
       });
       renderLista();

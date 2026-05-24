@@ -247,10 +247,19 @@ const server = http.createServer((req, res) => {
         const d = JSON.parse(b || '{}');
         if (!turno.abierto) { turno.abierto = true; turno.id = turno.id || hoy(); }
         if (d.domicilios && Array.isArray(d.domicilios)) {
+          const ORDEN_ESTADO = {pendiente:0, en_camino:1, entregado:2};
           d.domicilios.forEach(dom => {
             const idx = turno.domicilios.findIndex(x => x.id === dom.id);
-            if (idx >= 0) turno.domicilios[idx].estado = dom.estado;
-            else if (dom.id) turno.domicilios.push(dom);
+            if (idx >= 0) {
+              // Solo actualizar si el nuevo estado es igual o más avanzado
+              const estadoActual = ORDEN_ESTADO[turno.domicilios[idx].estado] || 0;
+              const estadoNuevo  = ORDEN_ESTADO[dom.estado] || 0;
+              if (estadoNuevo >= estadoActual) {
+                turno.domicilios[idx].estado = dom.estado;
+              }
+            } else if (dom.id) {
+              turno.domicilios.push(dom);
+            }
           });
         }
         if (d.salesLog       !== undefined) turno.salesLog       = d.salesLog;
