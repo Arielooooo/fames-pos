@@ -2578,11 +2578,14 @@ function pollServidor(){
 
       // Detectar pedido online nuevo
       var nuevoNum = data.turno ? data.turno.domNum||0 : 0;
-      if(nuevoNum > ultimoDomNum && ultimoDomNum > 0){
-        sonarOnline();
-        showToast('🛵 Nuevo pedido online!','ok');
+      if(nuevoNum > ultimoDomNum){
+        if(ultimoDomNum > 0){
+          // Hay pedidos nuevos desde la última revisión
+          sonarOnline();
+          showToast('🛵 ¡Nuevo pedido online! ('+data.turno.domNum+')','ok');
+        }
+        ultimoDomNum = nuevoNum;
       }
-      ultimoDomNum = nuevoNum;
 
       // ── Sincronizar cocina ──────────────────────────────────
       // El servidor es la fuente de verdad para comandas nuevas

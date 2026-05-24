@@ -295,11 +295,36 @@ const server = http.createServer((req, res) => {
           json(res, 400, { ok: false, error: 'Faltan datos' }); return;
         }
         turno.domNum++;
-        pedido.id = turno.domNum; pedido.label = 'DOM-' + turno.domNum;
-        pedido.estado = 'pendiente'; pedido.origen = 'online'; pedido.turnoId = turno.id;
+        pedido.id     = turno.domNum;
+        pedido.label  = 'DOM-' + turno.domNum;
+        pedido.estado = 'pendiente';
+        pedido.origen = 'online';
+        pedido.turnoId = turno.id;
         turno.domicilios.push(pedido);
+
+        // Agregar automáticamente a cocina como comanda
+        turno.comNum = (turno.comNum || 0) + 1;
+        const comandaOnline = {
+          id:        turno.comNum,
+          mesa:      pedido.label,
+          hora:      hora(),
+          timestamp: Date.now(),
+          cobrado:   false,
+          esDom:     true,
+          domId:     pedido.id,
+          items:     pedido.items.map(it => ({
+            id:    it.id,
+            item:  { name: it.name, price: it.price },
+            qty:   it.qty,
+            listo: false,
+            specs: it.specs || []
+          }))
+        };
+        turno.cocina = turno.cocina || [];
+        turno.cocina.push(comandaOnline);
+
         await guardarEstado('turno', turno);
-        console.log('Pedido online:', pedido.label, pedido.nombre);
+        console.log('Pedido online:', pedido.label, pedido.nombre, '→ Comanda #'+turno.comNum);
         json(res, 200, { ok: true, id: pedido.label });
       } catch(e) { json(res, 500, { ok: false, error: e.message }); }
     });
