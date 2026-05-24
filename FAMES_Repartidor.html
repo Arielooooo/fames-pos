@@ -83,18 +83,24 @@ function cambiarEstado(id,nuevoEstado){
   if(!dom)return;
   dom.estado=nuevoEstado;
   renderLista();
-  // Sincronizar con servidor
+  // Sincronizar estado con servidor inmediatamente
   fetch(window.location.origin+'/api/sync',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({domicilios:domicilios})
-  }).catch(function(){});
+  })
+  .then(function(){console.log('Estado dom '+id+' → '+nuevoEstado+' sincronizado');})
+  .catch(function(){});
+  // Re-consultar servidor tras 1s para confirmar
+  setTimeout(pollServidor, 1000);
 }
 
-function setRedDot(ok){
+function setRedDot(ok, extra){
   var el=document.getElementById('red-dot');
   if(!el)return;
-  el.textContent=ok?'🟢 En línea':'🔴 Sin conexión';
+  var txt = ok ? '🟢 En línea' : '🔴 Sin conexión';
+  if(ok && extra) txt += ' · ' + extra;
+  el.textContent=txt;
   el.style.color=ok?'var(--verde)':'var(--rojo)';
   el.style.borderColor=ok?'var(--verde)':'var(--rojo)';
 }
@@ -108,19 +114,21 @@ function pollServidor(){
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({id:repId,nombre:'🛵 Repartidor',rol:'repartidor',hora:new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})})
   }).catch(function(){});
-  fetch(window.location.origin+'/api/estado')
+  fetch(window.location.origin+'/api/turno')
     .then(function(r){return r.json();})
     .then(function(data){
-      setRedDot(true);
-      if(!data.ok||!data.data)return;
-      var serverDoms=data.data.domicilios||[];
-      // Mergear: mantener estados locales, agregar nuevos del servidor
+      if(!data.ok){ setRedDot(false,'Error servidor'); return; }
+      var serverDoms=data.domicilios||[];
+      setRedDot(true, serverDoms.filter(function(d){return d.estado!=='entregado';}).length + ' pendientes');
+      // Mergear: agregar nuevos, actualizar estados del servidor
       serverDoms.forEach(function(sd){
         var local=domicilios.find(function(d){return d.id===sd.id;});
         if(!local){
-          domicilios.push(sd);
+          domicilios.push(sd); // Nuevo domicilio del servidor
+        } else {
+          // Si el servidor tiene un estado más avanzado, actualizar
+          if(sd.estado==='entregado') local.estado='entregado';
         }
-        // No sobreescribir estado local (el repartidor lo cambió)
       });
       renderLista();
     })
@@ -131,7 +139,9 @@ function pollServidor(){
 
 document.addEventListener('DOMContentLoaded',function(){
   renderLista();
+  // Primera carga inmediata
   pollServidor();
+  // Luego cada 5 segundos
   setInterval(pollServidor,5000);
 });
 </script>
