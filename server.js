@@ -115,7 +115,7 @@ function estadoCompleto() {
     empleados, domicilios: turno.domicilios,
     salesLog: turno.salesLog, salesByProduct: turno.salesByProduct,
     cobroNum: turno.cobroNum, comNum: turno.comNum,
-    cocina: turno.cocina, orders: turno.orders,
+    cocina: (turno.cocina||[]).filter(c => !c.cobrado), orders: turno.orders,
     gastos: turno.gastos, gastoNum: turno.gastoNum
   };
 }
@@ -288,7 +288,9 @@ const server = http.createServer((req, res) => {
             if (idx >= 0) turno.cocina[idx].cobrado = true;
           });
         }
-        console.log('Sync: ' + turno.salesLog.length + ' ventas, ' + turno.cocina.filter(c=>!c.cobrado).length + ' comandas activas');
+        // Limpiar comandas cobradas del servidor periódicamente
+        turno.cocina = (turno.cocina||[]).filter(c => !c.cobrado);
+        console.log('Sync: ' + turno.salesLog.length + ' ventas, ' + turno.cocina.length + ' comandas activas');
         json(res, 200, { ok: true });
       } catch(e) { json(res, 500, { ok: false, error: e.message }); }
     });

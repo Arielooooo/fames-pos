@@ -1240,11 +1240,13 @@ function confirmarCobro(){
   cobroNum++;var hora=getNow();
   salesLog.push({num:cobroNum,table:mesa,subtotal:sub,propina:prop,total:total,pago:metodoPago,hora:hora,items:items});
   if(_cobroData.esComanda){
-    var com=cocina.find(function(c){return c.id===_cobroData.cid;});
-    if(com){com.cobrado=true;}
+    // Eliminar comanda cobrada del array local
+    cocina = cocina.filter(function(c){return c.id!==_cobroData.cid;});
     orders[mesa]={};
     updateCbadge();renderCocina();renderMesaTabs();
   } else {
+    // Eliminar comandas de esta mesa del array local
+    cocina = cocina.filter(function(c){return c.mesa!==mesa;});
     orders[mesa]={};
     renderOrder();renderMesaTabs();
   }
