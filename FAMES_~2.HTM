@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>FAMES — Repartidor</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600&display=swap');
+:root{--naranja:#F47C20;--negro:#111;--gris:#1C1C1C;--gris2:#242424;--borde:#333;--texto:#888;--blanco:#F5F5F0;--verde:#1D9E75;--azul:#B5D4F4;--rojo:#E24B4A;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--negro);color:var(--blanco);min-height:100vh;}
+header{background:var(--gris);border-bottom:1px solid var(--borde);padding:12px 16px;display:flex;justify-content:space-between;align-items:center;}
+.logo{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:3px;color:var(--naranja);}
+.red-dot{font-size:11px;padding:3px 8px;border-radius:4px;border:1px solid;}
+.lista{padding:12px 14px;}
+.empty{text-align:center;padding:60px 20px;color:var(--texto);font-size:13px;line-height:2;}
+.dom-card{background:var(--gris2);border:1px solid var(--borde);border-radius:11px;padding:14px;margin-bottom:11px;}
+.dom-card.entregado{opacity:.45;}
+.dom-id{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;color:var(--naranja);margin-bottom:7px;}
+.dom-info{font-size:13px;margin-bottom:4px;display:flex;align-items:flex-start;gap:7px;}
+.dom-info .ico{font-size:15px;flex-shrink:0;margin-top:1px;}
+.dom-total{font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--blanco);}
+.dom-pago{font-size:12px;color:var(--verde);margin-bottom:7px;}
+.dom-items{font-size:11px;color:var(--texto);margin-bottom:10px;border-top:1px solid var(--borde);padding-top:7px;}
+.btn-accion{width:100%;padding:14px;border-radius:9px;border:none;color:white;font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:2px;cursor:pointer;margin-top:4px;}
+.btn-salir{background:var(--azul);color:#111;}
+.btn-entregado{background:var(--verde);}
+.estado-badge{display:inline-block;font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;margin-bottom:8px;}
+.badge-pendiente{background:rgba(244,124,32,.15);color:var(--naranja);border:1px solid var(--naranja);}
+.badge-camino{background:rgba(181,212,244,.15);color:var(--azul);border:1px solid var(--azul);}
+.badge-entregado{background:rgba(29,158,117,.15);color:var(--verde);border:1px solid var(--verde);}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">FAMES · 🛵</div>
+  <span class="red-dot" id="red-dot" style="color:var(--rojo);border-color:var(--rojo);">Sin conexión</span>
+</header>
+<div class="lista" id="lista">
+  <div class="empty">Conectando...<br>Asegúrate de estar en la misma red</div>
+</div>
+
+<script>
+var domicilios=[];
+
+function renderLista(){
+  var el=document.getElementById('lista');
+  var pendientes=domicilios.filter(function(d){return d.estado!=='entregado';});
+  if(!pendientes.length){
+    el.innerHTML='<div class="empty">✅ Sin entregas pendientes<br><span style="font-size:11px;">Se actualiza cada 5 segundos</span></div>';
+    return;
+  }
+  var PI={efectivo:'💵 Cobrar en efectivo',transferencia:'📲 Ya pagado',tarjeta:'💳 Cobrar con terminal'};
+  el.innerHTML=pendientes.map(function(d){
+    var iStr=d.items.map(function(i){return i.qty+'x '+(i.name||'');}).join(', ');
+    var enCamino=d.estado==='en_camino';
+    return '<div class="dom-card">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">'
+      +'<div class="dom-id">'+d.label+'</div>'
+      +'<div class="dom-total">$'+Number(d.total).toFixed(2)+'</div>'
+      +'</div>'
+      +'<span class="estado-badge '+(enCamino?'badge-camino':'badge-pendiente')+'">'+(enCamino?'🛵 En camino':'⏳ Pendiente')+'</span>'
+      +'<div class="dom-info"><span class="ico">👤</span><span>'+d.nombre+'</span></div>'
+      +(d.tel?'<div class="dom-info"><span class="ico">📞</span><a href="tel:'+d.tel+'" style="color:var(--azul);">'+d.tel+'</a></div>':'')
+      +(d.dir&&d.dir!=='RECOGER EN RESTAURANTE'?'<div class="dom-info"><span class="ico">📍</span><span>'+d.dir+'</span></div>':'')
+      +(d.dir==='RECOGER EN RESTAURANTE'?'<div class="dom-info" style="color:var(--verde);"><span class="ico">🏠</span><span>Recoger en restaurante</span></div>':'')
+      +(d.notas?'<div class="dom-info" style="color:var(--naranja);"><span class="ico">📝</span><span>'+d.notas+'</span></div>':'')
+      +'<div class="dom-pago">'+(PI[d.pago]||'💵 Efectivo')+'</div>'
+      +'<div class="dom-items">'+iStr+'</div>'
+      +'<button class="btn-accion '+(enCamino?'btn-entregado':'btn-salir')+'" data-domid="'+d.id+'" data-estado="'+(enCamino?'entregado':'en_camino')+'">'
+      +(enCamino?'✓ MARCAR ENTREGADO':'🛵 SALÍ A ENTREGAR')+'</button>'
+      +'</div>';
+  }).join('');
+  el.querySelectorAll('.btn-accion').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      cambiarEstado(parseInt(this.getAttribute('data-domid')),this.getAttribute('data-estado'));
+    });
+  });
+}
+
+function cambiarEstado(id,nuevoEstado){
+  var dom=domicilios.find(function(d){return d.id===id;});
+  if(!dom)return;
+  dom.estado=nuevoEstado;
+  renderLista();
+  // Sincronizar estado con servidor inmediatamente
+  fetch(window.location.origin+'/api/sync',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({domicilios:domicilios})
+  })
+  .then(function(){console.log('Estado dom '+id+' → '+nuevoEstado+' sincronizado');})
+  .catch(function(){});
+  // Re-consultar servidor tras 1s para confirmar
+  setTimeout(pollServidor, 1000);
+}
+
+function setRedDot(ok, extra){
+  var el=document.getElementById('red-dot');
+  if(!el)return;
+  var txt = ok ? '🟢 En línea' : '🔴 Sin conexión';
+  if(ok && extra) txt += ' · ' + extra;
+  el.textContent=txt;
+  el.style.color=ok?'var(--verde)':'var(--rojo)';
+  el.style.borderColor=ok?'var(--verde)':'var(--rojo)';
+}
+
+var repId = 'rep_' + Math.random().toString(36).substr(2,8);
+
+function pollServidor(){
+  // Registrar presencia del repartidor
+  fetch(window.location.origin+'/api/ping',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({empId:repId,nombre:'🛵 Repartidor',rol:'repartidor',hora:new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})})
+  }).catch(function(){});
+  fetch(window.location.origin+'/api/turno')
+    .then(function(r){return r.json();})
+    .then(function(data){
+      if(!data.ok){ setRedDot(false,'Error servidor'); return; }
+      var serverDoms=data.domicilios||[];
+      setRedDot(true, serverDoms.filter(function(d){return d.estado!=='entregado';}).length + ' pendientes');
+      // Mergear: agregar nuevos, actualizar estados del servidor
+      var ORDEN = {pendiente:0, en_camino:1, entregado:2};
+      serverDoms.forEach(function(sd){
+        var local=domicilios.find(function(d){return d.id===sd.id;});
+        if(!local){
+          domicilios.push(sd);
+        } else {
+          // Respetar siempre el estado más avanzado
+          var eActual = ORDEN[local.estado]||0;
+          var eServ   = ORDEN[sd.estado]||0;
+          if(eServ > eActual) local.estado = sd.estado;
+        }
+      });
+      renderLista();
+    })
+    .catch(function(){
+      setRedDot(false);
+    });
+}
+
+document.addEventListener('DOMContentLoaded',function(){
+  renderLista();
+  // Primera carga inmediata
+  pollServidor();
+  // Luego cada 5 segundos
+  setInterval(pollServidor,5000);
+});
+</script>
+</body>
+</html>

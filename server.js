@@ -1,7 +1,7 @@
 const http = require('http');
 const fs   = require('fs');
 const path = require('path');
-const { Client } = require('pg');
+const { Pool } = require('pg');
 
 const PORT = process.env.PORT || 3000;
 const DATABASE_URL = process.env.DATABASE_URL || 'postgresql://postgres:PZPhSTzPEGisSkMZUxsUIrRbelJojwgL@postgres.railway.internal:5432/railway';
@@ -10,8 +10,17 @@ const DATABASE_URL = process.env.DATABASE_URL || 'postgresql://postgres:PZPhSTzP
 let db = null;
 
 async function conectarDB() {
-  db = new Client({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false } });
-  await db.connect();
+  // Pool: reconexión automática si la DB se cae (crítico en Railway)
+  db = new Pool({
+    connectionString: DATABASE_URL,
+    ssl: { rejectUnauthorized: false },
+    max: 5,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 5000
+  });
+  db.on('error', (err) => {
+    console.error('⚠ Pool DB error (se reconecta automáticamente):', err.message);
+  });
   // Crear tablas si no existen
   await db.query(`
     CREATE TABLE IF NOT EXISTS estado (
@@ -26,7 +35,7 @@ async function conectarDB() {
       creado TIMESTAMP DEFAULT NOW()
     );
   `);
-  console.log('✅ Base de datos conectada');
+  console.log('✅ Base de datos conectada (Pool)');
 }
 
 async function leerEstado(clave) {
