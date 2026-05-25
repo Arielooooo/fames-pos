@@ -1337,13 +1337,17 @@ function cancelarComanda(cid){
   var idx=cocina.findIndex(function(c){return c.id===cid;});
   if(idx>=0){
     var com=cocina[idx];
-    cocina.splice(idx,1);
+    // Marcar cobrado=true ANTES de sync para que cobradasIds llegue al servidor
+    // Si no, el servidor la re-agrega en el siguiente poll y reaparece a los 3s
+    cocina[idx].cobrado=true;
     // Si era domicilio, también quitar de domicilios
     if(com.esDom){
       domicilios=domicilios.filter(function(d){return d.label!==com.mesa;});
     }
     // Limpiar mesa si estaba en pedido
     if(orders[com.mesa]) orders[com.mesa]={};
+    syncEstado(); // enviar cobradasIds al servidor antes de limpiar localmente
+    cocina=cocina.filter(function(c){return !c.cobrado;});
     updateCbadge();
     renderCocina();
     renderMesaTabs();
